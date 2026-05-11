@@ -1,11 +1,11 @@
 package handlers
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/helenoktaa/dannisa_sweet_be/models"
 	"github.com/helenoktaa/dannisa_sweet_be/services"
-	"net/http"
-	"strconv"
 )
 
 type ProductHandler struct {
@@ -13,19 +13,18 @@ type ProductHandler struct {
 }
 
 func NewProductHandler() *ProductHandler {
-	return &ProductHandler{productService: services.NewProductService()}
+	return &ProductHandler{
+		productService: services.NewProductService(),
+	}
 }
 
-// GetAll - GET /products?page=1&limit=10&category=makanan
+// GetAll - GET /products
 func (h *ProductHandler) GetAll(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	category := c.Query("category")
-
-	products, total, err := h.productService.GetAll(page, limit, category)
+	products, err := h.productService.GetAll()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"success": false, "message": "Gagal mengambil data produk",
+			"success": false,
+			"message": "Gagal mengambil data produk",
 		})
 		return
 	}
@@ -33,79 +32,101 @@ func (h *ProductHandler) GetAll(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data":    products,
-		"meta": gin.H{
-			"total":    total,
-			"page":     page,
-			"limit":    limit,
-			"per_page": limit,
-		},
 	})
 }
 
 // GetByID - GET /products/:id
 func (h *ProductHandler) GetByID(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id := c.Param("id")
+
+	product, err := h.productService.GetByID(id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "ID tidak valid"})
+		c.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"message": "Produk tidak ditemukan",
+		})
 		return
 	}
 
-	product, err := h.productService.GetByID(uint(id))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "Produk tidak ditemukan"})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": product})
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    product,
+	})
 }
 
-// Create - POST /products (hanya admin)
+// Create - POST /products
 func (h *ProductHandler) Create(c *gin.Context) {
 	var req models.CreateProdukRequest
+
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
 		return
 	}
 
 	product, err := h.productService.Create(&req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal membuat produk"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": "Gagal membuat produk",
+		})
 		return
 	}
-	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "Produk berhasil dibuat", "data": product})
+
+	c.JSON(http.StatusCreated, gin.H{
+		"success": true,
+		"message": "Produk berhasil dibuat",
+		"data":    product,
+	})
 }
 
-// Update - PUT /products/:id (hanya admin)
+// Update - PUT /products/:id
 func (h *ProductHandler) Update(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "ID tidak valid"})
-		return
-	}
+	id := c.Param("id")
 
 	var req models.UpdateProdukRequest
+
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
 		return
 	}
 
-	product, err := h.productService.Update(uint(id), &req)
+	product, err := h.productService.Update(id, &req)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "Produk tidak ditemukan"})
+		c.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"message": "Produk tidak ditemukan",
+		})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Produk diperbarui", "data": product})
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Produk berhasil diperbarui",
+		"data":    product,
+	})
 }
 
-// Delete - DELETE /products/:id (hanya admin)
+// Delete - DELETE /products/:id
 func (h *ProductHandler) Delete(c *gin.Context) {
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	id := c.Param("id")
+
+	err := h.productService.Delete(id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "ID tidak valid"})
+		c.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"message": "Produk tidak ditemukan",
+		})
 		return
 	}
-	if err := h.productService.Delete(uint(id)); err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": "Produk tidak ditemukan"})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Produk berhasil dihapus"})
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Produk berhasil dihapus",
+	})
 }
