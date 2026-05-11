@@ -1,17 +1,14 @@
 package services
 
 import (
-	"context"
 	"errors"
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/helenoktaa/dannisa_sweet_be/config"
-	"github.com/helenoktaa/dannisa_sweet_be/models"
-	"github.com/helenoktaa/dannisa_sweet_be/repositories"
 	"os"
-	"strconv"
 	"time"
 
-	"gorm.io/gorm"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/helenoktaa/dannisa_sweet_be/models"
+	"github.com/helenoktaa/dannisa_sweet_be/repositories"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService struct {
@@ -19,84 +16,248 @@ type AuthService struct {
 }
 
 func NewAuthService() *AuthService {
-	return &AuthService{userRepo: repositories.NewUserRepository()}
+	return &AuthService{
+		userRepo: repositories.NewUserRepository(),
+	}
 }
 
-// VerifyFirebaseToken verifikasi token dari Firebase,
-// pastikan email sudah verified, lalu return Backend JWT
-func (s *AuthService) VerifyFirebaseToken(firebaseToken string) (string, *models.User, error) {
-	// 1. Verifikasi Firebase ID Token ke server Google
-	token, err := config.FirebaseAuth.VerifyIDToken(context.Background(), firebaseToken)
+
+// REGISTER
+
+func (s *AuthService) Register(req models.RegisterRequest) (*models.UserResponse, error) {
+
+	// cek email sudah digunakan atau belum
+	existingUser, _ := s.userRepo.FindByEmail(req.Email)
+	if existingUser != nil {
+		return nil, errors.New("email sudah digunakan")
+	}
+
+	// hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword(
+		[]byte(req.Password),
+		bcrypt.DefaultCost,
+	)
+
 	if err != nil {
-		return "", nil, errors.New("firebase token tidak valid atau kadaluarsa")
+		return nil, errors.New("gagal hash password")
 	}
 
-	// 2. Cek apakah email sudah diverifikasi
-	emailVerified, _ := token.Claims["email_verified"].(bool)
-	if !emailVerified {
-		return "", nil, errors.New("EMAIL_NOT_VERIFIED")
+	// buat object user
+	user := models.User{
+		IDUser:        req.IDUser,
+		NamaUser:      req.NamaUser,
+		Email:         req.Email,
+		Password:      string(hashedPassword),
+		RekPembayaran: req.RekPembayaran,
+		Whatsapp:      req.Whatsapp,
+		IDJabatan:     req.IDJabatan,
 	}
 
-	// 3. Ambil data dari claims Firebase token
-	uid := token.UID
-	email, _ := token.Claims["email"].(string)
-	name, _ := token.Claims["name"].(string)
-
-	// 4. Cari user di database, buat jika belum ada (first time login)
-	user, err := s.userRepo.FindByFirebaseUID(uid)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		// User pertama kali login — buat user baru
-		now := time.Now().Unix()
-		user = &models.User{
-			FirebaseUID:   uid,
-			Email:         email,
-			Name:          name,
-			Role:          "user",
-			EmailVerified: true,
-			LastLoginAt:   &now,
-		}
-		if err := s.userRepo.Create(user); err != nil {
-			return "", nil, errors.New("gagal membuat user baru")
-		}
-	} else if err != nil {
-		return "", nil, errors.New("error mengambil data user")
-	} else {
-		// Update last login
-		now := time.Now().Unix()
-		user.LastLoginAt = &now
-		user.EmailVerified = true
-		s.userRepo.Update(user)
+	// simpan ke database
+	if err := s.userRepo.Create(&user); err != nil {
+		return nil, errors.New("gagal membuat akun")
 	}
 
-	// 5. Generate Backend JWT Token
-	jwtToken, err := s.generateJWT(user)
+	// ambil data lengkap beserta relasi jabatan
+	createdUser, err := s.userRepo.FindByID(user.IDUser)
 	if err != nil {
-		return "", nil, errors.New("gagal membuat token")
+		return nil, err
 	}
 
-	return jwtToken, user, nil
+	// response
+	response := &models.UserResponse{
+		IDUser:        createdUser.IDUser,
+		NamaUser:      createdUser.NamaUser,
+		Email:         createdUser.Email,
+		RekPembayaran: createdUser.RekPembayaran,
+		Whatsapp:      createdUser.Whatsapp,
+		Jabatan: models.JabatanResponse{
+			IDJabatan:   createdUser.Jabatan.IDJabatan,
+			NamaJabatan: createdUser.Jabatan.NamaJabatan,
+			Gaji:        createdUser.Jabatan.Gaji,
+		},
+	}
+
+	return response, nil
 }
 
-// generateJWT membuat JWT token dengan payload user
+
+// LOGIN
+
+func (s *AuthService) Login(email string, password string) (*models.LoginResponse, error) {
+
+	// cari user berdasarkan email
+	user, err := s.userRepo.FindByEmail(email)
+	if err != nil {
+		return nil, errors.New("email atau password salah")
+	}
+
+	// compare password
+	err = bcrypt.CompareHashAndPassword(
+		[]byte(user.Password),
+		[]byte(password),
+	)
+
+	if err != nil {
+		return nil, errors.New("email atau password salah")
+	}
+
+	// generate JWT
+	token, err := s.generateJWT(user)
+	if err != nil {
+		return nil, errors.New("gagal membuat token")
+	}
+
+	// response
+	response := &models.LoginResponse{
+		Token: token,
+		User: models.UserResponse{
+			IDUser:        user.IDUser,
+			NamaUser:      user.NamaUser,
+			Email:         user.Email,
+			RekPembayaran: user.RekPembayaran,
+			Whatsapp:      user.Whatsapp,
+			Jabatan: models.JabatanResponse{
+				IDJabatan:   user.Jabatan.IDJabatan,
+				NamaJabatan: user.Jabatan.NamaJabatan,
+				Gaji:        user.Jabatan.Gaji,
+			},
+		},
+	}
+
+	return response, nil
+}
+
+
+// GET PROFILE
+
+func (s *AuthService) GetProfile(idUser string) (*models.UserResponse, error) {
+
+	user, err := s.userRepo.FindByID(idUser)
+	if err != nil {
+		return nil, errors.New("user tidak ditemukan")
+	}
+
+	response := &models.UserResponse{
+		IDUser:        user.IDUser,
+		NamaUser:      user.NamaUser,
+		Email:         user.Email,
+		RekPembayaran: user.RekPembayaran,
+		Whatsapp:      user.Whatsapp,
+		Jabatan: models.JabatanResponse{
+			IDJabatan:   user.Jabatan.IDJabatan,
+			NamaJabatan: user.Jabatan.NamaJabatan,
+			Gaji:        user.Jabatan.Gaji,
+		},
+	}
+
+	return response, nil
+}
+
+
+// UPDATE PROFILE
+
+func (s *AuthService) UpdateProfile(
+	idUser string,
+	req models.UpdateUserRequest,
+) (*models.UserResponse, error) {
+
+	user, err := s.userRepo.FindByID(idUser)
+	if err != nil {
+		return nil, errors.New("user tidak ditemukan")
+	}
+
+	user.NamaUser = req.NamaUser
+	user.RekPembayaran = req.RekPembayaran
+	user.Whatsapp = req.Whatsapp
+
+	if req.IDJabatan != 0 {
+		user.IDJabatan = req.IDJabatan
+	}
+
+	if err := s.userRepo.Update(user); err != nil {
+		return nil, errors.New("gagal update profil")
+	}
+
+	updatedUser, _ := s.userRepo.FindByID(idUser)
+
+	response := &models.UserResponse{
+		IDUser:        updatedUser.IDUser,
+		NamaUser:      updatedUser.NamaUser,
+		Email:         updatedUser.Email,
+		RekPembayaran: updatedUser.RekPembayaran,
+		Whatsapp:      updatedUser.Whatsapp,
+		Jabatan: models.JabatanResponse{
+			IDJabatan:   updatedUser.Jabatan.IDJabatan,
+			NamaJabatan: updatedUser.Jabatan.NamaJabatan,
+			Gaji:        updatedUser.Jabatan.Gaji,
+		},
+	}
+
+	return response, nil
+}
+
+
+// UPDATE PASSWORD
+
+func (s *AuthService) UpdatePassword(
+	idUser string,
+	req models.UpdatePasswordRequest,
+) error {
+
+	user, err := s.userRepo.FindByID(idUser)
+	if err != nil {
+		return errors.New("user tidak ditemukan")
+	}
+
+	// cek password lama
+	err = bcrypt.CompareHashAndPassword(
+		[]byte(user.Password),
+		[]byte(req.PasswordLama),
+	)
+
+	if err != nil {
+		return errors.New("password lama salah")
+	}
+
+	// hash password baru
+	hashedPassword, err := bcrypt.GenerateFromPassword(
+		[]byte(req.PasswordBaru),
+		bcrypt.DefaultCost,
+	)
+
+	if err != nil {
+		return errors.New("gagal hash password")
+	}
+
+	user.Password = string(hashedPassword)
+
+	if err := s.userRepo.Update(user); err != nil {
+		return errors.New("gagal update password")
+	}
+
+	return nil
+}
+
+
+// GENERATE JWT
+
 func (s *AuthService) generateJWT(user *models.User) (string, error) {
-	expireHours, _ := strconv.Atoi(os.Getenv("JWT_EXPIRE_HOURS"))
-	if expireHours == 0 {
-		expireHours = 24
-	}
 
-	// Claims adalah payload yang disimpan dalam token
 	claims := jwt.MapClaims{
-		"sub":            user.ID,
-		"firebase_uid":   user.FirebaseUID,
-		"email":          user.Email,
-		"name":           user.Name,
-		"role":           user.Role,
-		"email_verified": user.EmailVerified,
-		"iat":            time.Now().Unix(),
-		"exp":            time.Now().Add(time.Hour * time.Duration(expireHours)).Unix(),
+		"id_user": user.IDUser,
+		"email":   user.Email,
+		"role":    user.Jabatan.NamaJabatan,
+		"exp":     time.Now().Add(time.Hour * 24).Unix(),
+		"iat":     time.Now().Unix(),
 	}
 
-	// Buat token dengan algoritma HS256 dan secret key
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	token := jwt.NewWithClaims(
+		jwt.SigningMethodHS256,
+		claims,
+	)
+
+	return token.SignedString(
+		[]byte(os.Getenv("JWT_SECRET")),
+	)
 }
