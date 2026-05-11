@@ -10,66 +10,76 @@ type ProductService struct {
 }
 
 func NewProductService() *ProductService {
-	return &ProductService{productRepo: repositories.NewProductRepository()}
+	return &ProductService{
+		productRepo: repositories.NewProductRepository(),
+	}
 }
 
-func (s *ProductService) GetAll(page, limit int, category string) ([]models.Produk, int64, error) {
-	if page <= 0 {
-		page = 1
-	}
-	if limit <= 0 || limit > 100 {
-		limit = 10
-	}
-	return s.productRepo.FindAll(page, limit, category)
+// Get all produk
+func (s *ProductService) GetAll() ([]models.Produk, error) {
+	return s.productRepo.FindAll()
 }
 
-func (s *ProductService) GetByID(id uint) (*models.Produk, error) {
+// Get produk by ID
+func (s *ProductService) GetByID(id string) (*models.Produk, error) {
 	return s.productRepo.FindByID(id)
 }
 
+// Create produk
 func (s *ProductService) Create(req *models.CreateProdukRequest) (*models.Produk, error) {
 	product := &models.Produk{
-		Name:        req.Name,
-		Description: req.Description,
-		Price:       req.Price,
-		Stock:       req.Stock,
-		Category:    req.Category,
-		ImageURL:    req.ImageURL,
+		IDProduk:    req.IDProduk,
+		NamaProduk:  req.NamaProduk,
+		HargaModal:  req.HargaModal,
+		HargaJual:   req.HargaJual,
+		Stok:        req.Stok,
+		IDKategori:  req.IDKategori,
 	}
+
 	err := s.productRepo.Create(product)
-	return product, err
+	if err != nil {
+		return nil, err
+	}
+
+	return product, nil
 }
 
-func (s *ProductService) Update(id uint, req *models.UpdateProdukRequest) (*models.Produk, error) {
+// Update produk
+func (s *ProductService) Update(id string, req *models.UpdateProdukRequest) (*models.Produk, error) {
 	product, err := s.productRepo.FindByID(id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Update hanya field yang dikirim (pointer nil = tidak diupdate)
-	if req.Name != nil {
-		product.Name = *req.Name
+	if req.NamaProduk != "" {
+		product.NamaProduk = req.NamaProduk
 	}
-	if req.Description != nil {
-		product.Description = *req.Description
+
+	if req.HargaModal != 0 {
+		product.HargaModal = req.HargaModal
 	}
-	if req.Price != nil {
-		product.Price = *req.Price
+
+	if req.HargaJual != 0 {
+		product.HargaJual = req.HargaJual
 	}
-	if req.Stock != nil {
-		product.Stock = *req.Stock
+
+	if req.Stok != 0 {
+		product.Stok = req.Stok
 	}
-	if req.Category != nil {
-		product.Category = *req.Category
-	}
-	if req.ImageURL != nil {
-		product.ImageURL = *req.ImageURL
+
+	if req.IDKategori != "" {
+		product.IDKategori = req.IDKategori
 	}
 
 	err = s.productRepo.Update(product)
-	return product, err
+	if err != nil {
+		return nil, err
+	}
+
+	return product, nil
 }
 
-func (s *ProductService) Delete(id uint) error {
+// Delete produk
+func (s *ProductService) Delete(id string) error {
 	return s.productRepo.Delete(id)
 }
