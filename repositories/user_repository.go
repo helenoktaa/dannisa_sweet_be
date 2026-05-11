@@ -11,29 +11,51 @@ func NewUserRepository() *UserRepository {
 	return &UserRepository{}
 }
 
-// FindByFirebaseUID mencari user berdasarkan Firebase UID
-func (r *UserRepository) FindByFirebaseUID(uid string) (*models.User, error) {
+// Find By ID
+
+func (r *UserRepository) FindByID(id string) (*models.User, error) {
 	var user models.User
-	result := config.DB.Where("firebase_uid = ?", uid).First(&user)
+
+	result := config.DB.
+		Preload("Jabatan").
+		Where("id_user = ?", id).
+		First(&user)
+
 	if result.Error != nil {
 		return nil, result.Error
 	}
+
 	return &user, nil
 }
 
-// FindByEmail mencari user berdasarkan email
+// Find By Email
+
 func (r *UserRepository) FindByEmail(email string) (*models.User, error) {
 	var user models.User
-	result := config.DB.Where("email = ?", email).First(&user)
-	return &user, result.Error
+
+	result := config.DB.
+		Preload("Jabatan").
+		Where("email = ?", email).
+		First(&user)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return &user, nil
 }
 
-// Create menyimpan user baru ke database
+
+// Create User
+
 func (r *UserRepository) Create(user *models.User) error {
 	return config.DB.Create(user).Error
 }
 
-// Update memperbarui data user
+
+// Update User
+
+
 func (r *UserRepository) Update(user *models.User) error {
 	return config.DB.Save(user).Error
 }

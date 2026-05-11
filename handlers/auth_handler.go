@@ -13,15 +13,18 @@ type AuthHandler struct {
 }
 
 func NewAuthHandler() *AuthHandler {
-	return &AuthHandler{authService: services.NewAuthService()}
+	return &AuthHandler{
+		authService: services.NewAuthService(),
+	}
 }
 
-// Login godoc
+
+// LOGIN
 // POST /v1/auth/login
-// Terima email + password → verifikasi → return JWT
+
 func (h *AuthHandler) Login(c *gin.Context) {
-	// 1. Parse request body
 	var req models.LoginRequest
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
@@ -30,8 +33,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// 2. Proses login via service
-	loginResp, err := h.authService.Login(req.Email, req.Password)
+	response, err := h.authService.Login(req.Email, req.Password)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"success": false,
@@ -40,19 +42,20 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// 3. Return JWT + data user
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Login berhasil",
-		"data":    loginResp,
+		"data":    response,
 	})
 }
 
-// Register godoc
+
+// REGISTER
 // POST /v1/auth/register
-// Hanya bisa diakses Admin (tambah akun kasir baru)
+
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req models.RegisterRequest
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
@@ -77,11 +80,11 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	})
 }
 
-// GetProfile godoc
+
+// GET PROFILE
 // GET /v1/auth/profile
-// Ambil data profil user yang sedang login
+
 func (h *AuthHandler) GetProfile(c *gin.Context) {
-	// IDUser diambil dari JWT via middleware
 	idUser := c.GetString("id_user")
 
 	user, err := h.authService.GetProfile(idUser)
@@ -99,13 +102,15 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 	})
 }
 
-// UpdateProfile godoc
+
+// UPDATE PROFILE
 // PUT /v1/auth/profile
-// Update data profil user yang sedang login
+
 func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 	idUser := c.GetString("id_user")
 
 	var req models.UpdateUserRequest
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
@@ -125,18 +130,20 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "Profil berhasil diupdate",
+		"message": "Profil berhasil diperbarui",
 		"data":    user,
 	})
 }
 
-// UpdatePassword godoc
+
+// UPDATE PASSWORD
 // PUT /v1/auth/password
-// Ganti password user yang sedang login
+
 func (h *AuthHandler) UpdatePassword(c *gin.Context) {
 	idUser := c.GetString("id_user")
 
 	var req models.UpdatePasswordRequest
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
@@ -145,7 +152,8 @@ func (h *AuthHandler) UpdatePassword(c *gin.Context) {
 		return
 	}
 
-	if err := h.authService.UpdatePassword(idUser, req); err != nil {
+	err := h.authService.UpdatePassword(idUser, req)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
 			"message": err.Error(),

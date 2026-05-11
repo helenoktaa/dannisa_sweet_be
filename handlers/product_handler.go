@@ -60,7 +60,7 @@ func (h *ProductHandler) GetByID(c *gin.Context) {
 
 // Create - POST /products (hanya admin)
 func (h *ProductHandler) Create(c *gin.Context) {
-	var req models.CreateProductRequest
+	var req models.CreateProdukRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
 		return
@@ -82,7 +82,7 @@ func (h *ProductHandler) Update(c *gin.Context) {
 		return
 	}
 
-	var req models.UpdateProductRequest
+	var req models.UpdateProdukRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
 		return
