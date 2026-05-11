@@ -2,7 +2,7 @@ package models
 
 // Kategori menyimpan kategori produk (misal: Bolen, Kue Kering, Cake, dll)
 type Kategori struct {
-	IDKategori   int    `gorm:"primaryKey;autoIncrement"  json:"id_kategori"`
+	IDKategori   string    `gorm:"primaryKey;autoIncrement"  json:"id_kategori"`
 	NamaKategori string `gorm:"not null;size:50;unique"   json:"nama_kategori"`
 
 	// Relasi: satu kategori punya banyak produk

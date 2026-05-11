@@ -7,7 +7,7 @@ type Produk struct {
 	HargaModal float64 `gorm:"not null"              json:"harga_modal"` // harga beli/produksi
 	HargaJual  float64 `gorm:"not null"              json:"harga_jual"`  // harga jual ke customer
 	Stok       int     `gorm:"not null;default:0"    json:"stok"`
-	IDKategori int     `gorm:"not null;index"        json:"id_kategori"`
+	IDKategori string     `gorm:"not null;index"        json:"id_kategori"`
 
 	// Relasi
 	Kategori        Kategori          `gorm:"foreignKey:IDKategori"  json:"kategori,omitempty"`

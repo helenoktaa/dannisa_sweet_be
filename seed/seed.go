@@ -12,6 +12,19 @@ func main() {
 	godotenv.Load()
 	config.InitDatabase()
 
+	// Seed kategori
+	categories := []models.Kategori{
+	{IDKategori: "KDS001", NamaKategori: "Bolen"},
+	{IDKategori: "KDS002", NamaKategori: "Kue Kering"},
+	{IDKategori: "KDS003", NamaKategori: "Bolu"},
+	{IDKategori: "KDS004", NamaKategori: "Brownies"},
+	{IDKategori: "KDS005", NamaKategori: "Roti"},
+}
+
+	for _, c := range categories {
+		config.DB.Create(&c)
+	}
+
 	products := []models.Produk{
 		{
 			IDProduk:   "DS001",
