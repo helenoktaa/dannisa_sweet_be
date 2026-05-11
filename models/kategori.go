@@ -20,7 +20,7 @@ type UpdateKategoriRequest struct {
 
 // Response
 type KategoriResponse struct {
-	IDKategori   int    `json:"id_kategori"`
+	IDKategori   string    `json:"id_kategori"`
 	NamaKategori string `json:"nama_kategori"`
 }
 

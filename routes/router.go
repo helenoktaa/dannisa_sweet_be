@@ -26,9 +26,9 @@ func SetupRouter() *gin.Engine {
 	// ─── Init handlers ────────────────────────────────────────
 	authHandler      := handlers.NewAuthHandler()
 	productHandler := handlers.NewProductHandler()
-	kategoriHandler  := handlers.NewKategoriHandler()
-	transaksiHandler := handlers.NewTransaksiHandler()
-	userHandler      := handlers.NewUserHandler()
+	//kategoriHandler  := handlers.NewKategoriHandler()
+	//transaksiHandler := handlers.NewTransaksiHandler()
+	//userHandler      := handlers.NewUserHandler()
 
 	// ─── API v1 group ─────────────────────────────────────────
 	v1 := r.Group("/v1")
@@ -74,7 +74,7 @@ func SetupRouter() *gin.Engine {
 			}
 
 			// ── Kategori ──────────────────────────────────────
-			kategori := protected.Group("/kategori")
+			/* kategori := protected.Group("/kategori")
 			{
 				kategori.GET("",     kategoriHandler.GetAll)   // GET /v1/kategori       (Admin & Kasir)
 				kategori.GET("/:id", kategoriHandler.GetByID)  // GET /v1/kategori/:id   (Admin & Kasir)
@@ -88,9 +88,9 @@ func SetupRouter() *gin.Engine {
 					adminKategori.DELETE("/:id", kategoriHandler.Delete) // DELETE /v1/kategori/:id
 				}
 			}
-
+ */
 			// ── Transaksi ─────────────────────────────────────
-			transaksi := protected.Group("/transaksi")
+			/* transaksi := protected.Group("/transaksi")
 			{
 				// Admin & Kasir bisa buat dan lihat transaksi
 				transaksi.POST("",     transaksiHandler.Create)   // POST /v1/transaksi       (input transaksi baru)
@@ -104,16 +104,16 @@ func SetupRouter() *gin.Engine {
 					adminTrx.GET("", transaksiHandler.GetAll) // GET /v1/transaksi (semua transaksi)
 				}
 			}
-
+ */
 			// ── User Management (Admin only) ──────────────────
-			users := protected.Group("/users")
+			/* users := protected.Group("/users")
 			users.Use(middleware.AdminOnly())
 			{
 				users.GET("",        userHandler.GetAll)    // GET    /v1/users
 				users.GET("/:id",    userHandler.GetByID)   // GET    /v1/users/:id
 				users.PUT("/:id",    userHandler.Update)    // PUT    /v1/users/:id
 				users.DELETE("/:id", userHandler.Delete)    // DELETE /v1/users/:id
-			}
+			} */
 		}
 	}
 
