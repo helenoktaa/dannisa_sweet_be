@@ -2,7 +2,7 @@ package models
 
 // Jabatan menyimpan data jabatan karyawan (Admin / Kasir)
 type Jabatan struct {
-	IDJabatan int `gorm:"primaryKey;autoIncrement" json:"id_jabatan"`
+	IDJabatan string `gorm:"primaryKey;autoIncrement" json:"id_jabatan"`
 
 	NamaJabatan string  `gorm:"not null;size:50" json:"nama_jabatan"`
 	Gaji        float64 `gorm:"not null"         json:"gaji"`
@@ -26,7 +26,7 @@ type UpdateJabatanRequest struct {
 // DTO Response
 
 type JabatanResponse struct {
-	IDJabatan int `json:"id_jabatan"`
+	IDJabatan string `json:"id_jabatan"`
 
 	NamaJabatan string  `json:"nama_jabatan"`
 	Gaji        float64 `json:"gaji"`

@@ -8,7 +8,7 @@ type User struct {
 	Password      string  `gorm:"not null"                  json:"-"` // disembunyikan dari response JSON
 	RekPembayaran string  `gorm:"size:50"                   json:"rek_pembayaran"`
 	Whatsapp      string  `gorm:"size:20"                   json:"whatsapp"`
-	IDJabatan     int     `gorm:"not null;index"            json:"id_jabatan"`
+	IDJabatan     string     `gorm:"not null;index"            json:"id_jabatan"`
 
 	// Relasi
 	Jabatan    Jabatan     `gorm:"foreignKey:IDJabatan"  json:"jabatan,omitempty"`
@@ -23,7 +23,7 @@ type RegisterRequest struct {
 	Password      string `json:"password"        binding:"required,min=6"`
 	RekPembayaran string `json:"rek_pembayaran"`
 	Whatsapp      string `json:"whatsapp"`
-	IDJabatan     int    `json:"id_jabatan"      binding:"required"`
+	IDJabatan     string    `json:"id_jabatan"      binding:"required"`
 }
 
 type LoginRequest struct {
@@ -35,7 +35,7 @@ type UpdateUserRequest struct {
 	NamaUser      string `json:"nama_user"`
 	RekPembayaran string `json:"rek_pembayaran"`
 	Whatsapp      string `json:"whatsapp"`
-	IDJabatan     int    `json:"id_jabatan"`
+	IDJabatan     string    `json:"id_jabatan"`
 }
 
 type UpdatePasswordRequest struct {

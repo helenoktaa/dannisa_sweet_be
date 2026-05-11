@@ -171,7 +171,7 @@ func (s *AuthService) UpdateProfile(
 	user.RekPembayaran = req.RekPembayaran
 	user.Whatsapp = req.Whatsapp
 
-	if req.IDJabatan != 0 {
+	if req.IDJabatan != "" {
 		user.IDJabatan = req.IDJabatan
 	}
 
