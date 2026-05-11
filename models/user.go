@@ -12,7 +12,6 @@ type User struct {
 
 	// Relasi
 	Jabatan Jabatan `gorm:"foreignKey:IDJabatan;references:IDJabatan" json:"jabatan,omitempty"`
-	Transaksis []Transaksi `gorm:"foreignKey:IDUser"     json:"transaksis,omitempty"`
 }
 
 // DTO
