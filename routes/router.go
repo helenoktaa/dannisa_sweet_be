@@ -25,7 +25,7 @@ func SetupRouter() *gin.Engine {
 
 	// ─── Init handlers ────────────────────────────────────────
 	authHandler      := handlers.NewAuthHandler()
-	produkHandler    := handlers.NewProdukHandler()
+	productHandler := handlers.NewProductHandler()
 	kategoriHandler  := handlers.NewKategoriHandler()
 	transaksiHandler := handlers.NewTransaksiHandler()
 	userHandler      := handlers.NewUserHandler()
@@ -60,16 +60,16 @@ func SetupRouter() *gin.Engine {
 			// ── Produk ────────────────────────────────────────
 			produk := protected.Group("/produk")
 			{
-				produk.GET("",     produkHandler.GetAll)   // GET /v1/produk         (Admin & Kasir)
-				produk.GET("/:id", produkHandler.GetByID)  // GET /v1/produk/:id     (Admin & Kasir)
+				produk.GET("",     productHandler.GetAll)   // GET /v1/produk         (Admin & Kasir)
+				produk.GET("/:id", productHandler.GetByID)  // GET /v1/produk/:id     (Admin & Kasir)
 
 				// Hanya Admin
 				adminProduk := produk.Group("")
 				adminProduk.Use(middleware.AdminOnly())
 				{
-					adminProduk.POST("",      produkHandler.Create) // POST   /v1/produk
-					adminProduk.PUT("/:id",   produkHandler.Update) // PUT    /v1/produk/:id
-					adminProduk.DELETE("/:id", produkHandler.Delete) // DELETE /v1/produk/:id
+					adminProduk.POST("",      productHandler.Create) // POST   /v1/produk
+					adminProduk.PUT("/:id",   productHandler.Update) // PUT    /v1/produk/:id
+					adminProduk.DELETE("/:id", productHandler.Delete) // DELETE /v1/produk/:id
 				}
 			}
 
