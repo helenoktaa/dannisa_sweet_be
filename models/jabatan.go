@@ -8,7 +8,7 @@ type Jabatan struct {
 	Gaji        float64 `gorm:"not null"         json:"gaji"`
 
 	// Relasi: satu jabatan punya banyak user
-	Users []User `gorm:"foreignKey:IDJabatan" json:"users,omitempty"`
+	Users []User `gorm:"foreignKey:IDJabatan"`
 }
 
 // DTO Request

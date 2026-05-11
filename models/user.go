@@ -11,7 +11,7 @@ type User struct {
 	IDJabatan     string     `gorm:"not null;index"            json:"id_jabatan"`
 
 	// Relasi
-	Jabatan    Jabatan     `gorm:"foreignKey:IDJabatan"  json:"jabatan,omitempty"`
+	Jabatan Jabatan `gorm:"foreignKey:IDJabatan;references:IDJabatan" json:"jabatan,omitempty"`
 	Transaksis []Transaksi `gorm:"foreignKey:IDUser"     json:"transaksis,omitempty"`
 }
 

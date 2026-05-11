@@ -31,12 +31,12 @@ func main() {
 	// 5. AutoMigrate — buat/update tabel otomatis sesuai struct model
 	// URUTAN PENTING: tabel yang direferensi FK harus di-migrate duluan
 	err := config.DB.AutoMigrate(
-		&models.Jabatan{},         // 1. Jabatan dulu (FK dari Users)
-		&models.User{},            // 2. Users (FK dari Transaksi)
-		&models.Kategori{},        // 3. Kategori dulu (FK dari Produk)
-		&models.Produk{},          // 4. Produk (FK dari DetailTransaksi)
-		&models.Transaksi{},       // 5. Transaksi (FK dari DetailTransaksi)
-		&models.DetailTransaksi{}, // 6. DetailTransaksi paling terakhir
+		&models.Jabatan{},         
+		&models.User{},            
+		&models.Kategori{},        
+		&models.Produk{},          
+		&models.Transaksi{},       
+		&models.DetailTransaksi{}, 
 	)
 	if err != nil {
 		log.Fatalf("AutoMigrate gagal: %v", err)
