@@ -21,7 +21,7 @@ type CreateProdukRequest struct {
 	HargaModal float64 `json:"harga_modal" binding:"required,min=0"`
 	HargaJual  float64 `json:"harga_jual"  binding:"required,min=0"`
 	Stok       int     `json:"stok"        binding:"required,min=0"`
-	IDKategori int     `json:"id_kategori" binding:"required"`
+	IDKategori string     `json:"id_kategori" binding:"required"`
 }
 
 type UpdateProdukRequest struct {
@@ -29,7 +29,7 @@ type UpdateProdukRequest struct {
 	HargaModal float64 `json:"harga_modal" binding:"omitempty,min=0"`
 	HargaJual  float64 `json:"harga_jual"  binding:"omitempty,min=0"`
 	Stok       int     `json:"stok"        binding:"omitempty,min=0"`
-	IDKategori int     `json:"id_kategori"`
+	IDKategori string     `json:"id_kategori"`
 }
 
 type UpdateStokRequest struct {
