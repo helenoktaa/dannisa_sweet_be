@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/helenoktaa/mycatalog-be-service/services"
+	"github.com/helenoktaa/dannisa_sweet_be/services"
 	"net/http"
 	"time"
 )

@@ -2,8 +2,8 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/helenoktaa/mycatalog-be-service/handlers"
-	"github.com/helenoktaa/mycatalog-be-service/middleware"
+	"github.com/helenoktaa/dannisa_sweet_be/handlers"
+	"github.com/helenoktaa/dannisa_sweet_be/middleware"
 )
 
 func SetupRouter() *gin.Engine {

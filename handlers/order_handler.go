@@ -2,8 +2,8 @@ package handlers
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/helenoktaa/mycatalog-be-service/models"
-	"github.com/helenoktaa/mycatalog-be-service/services"
+	"github.com/helenoktaa/dannisa_sweet_be/models"
+	"github.com/helenoktaa/dannisa_sweet_be/services"
 	"net/http"
 	"strconv"
 )

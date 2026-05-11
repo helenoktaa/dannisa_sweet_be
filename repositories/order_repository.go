@@ -1,8 +1,8 @@
 package repositories
 
 import (
-	"github.com/helenoktaa/mycatalog-be-service/config"
-	"github.com/helenoktaa/mycatalog-be-service/models"
+	"github.com/helenoktaa/dannisa_sweet_be/config"
+	"github.com/helenoktaa/dannisa_sweet_be/models"
 )
 
 type OrderRepository struct{}

@@ -2,7 +2,7 @@ package config
 
 import (
 	"fmt"
-	"github.com/helenoktaa/mycatalog-be-service/models"
+	"github.com/helenoktaa/dannisa_sweet_be/models"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

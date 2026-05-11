@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/helenoktaa/mycatalog-be-service/pkg/logger"
+	"github.com/helenoktaa/dannisa_sweet_be/pkg/logger"
 )
 
 // responseBodyWriter membungkus gin.ResponseWriter untuk capture response body

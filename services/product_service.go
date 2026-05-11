@@ -1,8 +1,8 @@
 package services
 
 import (
-	"github.com/helenoktaa/mycatalog-be-service/models"
-	"github.com/helenoktaa/mycatalog-be-service/repositories"
+	"github.com/helenoktaa/dannisa_sweet_be/models"
+	"github.com/helenoktaa/dannisa_sweet_be/repositories"
 )
 
 type ProductService struct {
