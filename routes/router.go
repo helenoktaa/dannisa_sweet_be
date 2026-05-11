@@ -7,10 +7,8 @@ import (
 )
 
 func SetupRouter() *gin.Engine {
-	// Gunakan gin.New() agar kita bisa kontrol penuh urutan middleware
-	// (tidak pakai gin.Default() yang auto-include logger bawaan gin)
 	r := gin.New()
-	r.Use(gin.Recovery()) // panic recovery tetap diperlukan
+	r.Use(gin.Recovery())
 	r.Use(middleware.HTTPLogger())
 
 	// ─── CORS Middleware ───────────────────────────────────────
@@ -26,68 +24,95 @@ func SetupRouter() *gin.Engine {
 	})
 
 	// ─── Init handlers ────────────────────────────────────────
-	authHandler := handlers.NewAuthHandler()
-	productHandler := handlers.NewProductHandler()
-	cartHandler := handlers.NewCartHandler()
-	orderHandler := handlers.NewOrderHandler()
+	authHandler      := handlers.NewAuthHandler()
+	produkHandler    := handlers.NewProdukHandler()
+	kategoriHandler  := handlers.NewKategoriHandler()
+	transaksiHandler := handlers.NewTransaksiHandler()
+	userHandler      := handlers.NewUserHandler()
 
 	// ─── API v1 group ─────────────────────────────────────────
 	v1 := r.Group("/v1")
 	{
 		// Health check
 		v1.GET("/health", func(c *gin.Context) {
-			c.JSON(200, gin.H{"status": "ok", "service": "mycatalog-backend"})
+			c.JSON(200, gin.H{
+				"status":  "ok",
+				"service": "dannisa-sweet-backend",
+			})
 		})
 
-		// ── Auth routes (public) ──────────────────────────────
+		// ── Auth routes (public, tidak butuh JWT) ─────────────
 		auth := v1.Group("/auth")
 		{
-			auth.POST("/verify-token", authHandler.VerifyToken)
+			auth.POST("/login",    authHandler.Login)    // POST /v1/auth/login
+			auth.POST("/register", authHandler.Register) // POST /v1/auth/register (nanti di-protect admin)
 		}
 
-		// ── Protected routes (butuh JWT) ──────────────────────
+		// ── Protected routes (semua butuh JWT) ────────────────
 		protected := v1.Group("")
 		protected.Use(middleware.AuthMiddleware())
 		{
-			// Products
-			products := protected.Group("/products")
-			{
-				products.GET("", productHandler.GetAll)
-				products.GET("/:id", productHandler.GetByID)
+			// ── Profile (semua role bisa akses) ───────────────
+			protected.GET("/auth/profile",    authHandler.GetProfile)    // GET    /v1/auth/profile
+			protected.PUT("/auth/profile",    authHandler.UpdateProfile)  // PUT    /v1/auth/profile
+			protected.PUT("/auth/password",   authHandler.UpdatePassword) // PUT    /v1/auth/password
 
-				adminProducts := products.Group("")
-				adminProducts.Use(middleware.AdminOnly())
+			// ── Produk ────────────────────────────────────────
+			produk := protected.Group("/produk")
+			{
+				produk.GET("",     produkHandler.GetAll)   // GET /v1/produk         (Admin & Kasir)
+				produk.GET("/:id", produkHandler.GetByID)  // GET /v1/produk/:id     (Admin & Kasir)
+
+				// Hanya Admin
+				adminProduk := produk.Group("")
+				adminProduk.Use(middleware.AdminOnly())
 				{
-					adminProducts.POST("", productHandler.Create)
-					adminProducts.PUT("/:id", productHandler.Update)
-					adminProducts.DELETE("/:id", productHandler.Delete)
+					adminProduk.POST("",      produkHandler.Create) // POST   /v1/produk
+					adminProduk.PUT("/:id",   produkHandler.Update) // PUT    /v1/produk/:id
+					adminProduk.DELETE("/:id", produkHandler.Delete) // DELETE /v1/produk/:id
 				}
 			}
 
-			// Cart
-			cart := protected.Group("/cart")
+			// ── Kategori ──────────────────────────────────────
+			kategori := protected.Group("/kategori")
 			{
-				cart.GET("", cartHandler.GetCart)           // GET    /v1/cart
-				cart.POST("", cartHandler.AddToCart)        // POST   /v1/cart
-				cart.PUT("/:id", cartHandler.UpdateCartItem) // PUT    /v1/cart/:id
-				cart.DELETE("/:id", cartHandler.RemoveCartItem) // DELETE /v1/cart/:id
-				cart.DELETE("", cartHandler.ClearCart)      // DELETE /v1/cart
+				kategori.GET("",     kategoriHandler.GetAll)   // GET /v1/kategori       (Admin & Kasir)
+				kategori.GET("/:id", kategoriHandler.GetByID)  // GET /v1/kategori/:id   (Admin & Kasir)
+
+				// Hanya Admin
+				adminKategori := kategori.Group("")
+				adminKategori.Use(middleware.AdminOnly())
+				{
+					adminKategori.POST("",       kategoriHandler.Create) // POST   /v1/kategori
+					adminKategori.PUT("/:id",    kategoriHandler.Update) // PUT    /v1/kategori/:id
+					adminKategori.DELETE("/:id", kategoriHandler.Delete) // DELETE /v1/kategori/:id
+				}
 			}
 
-			// Orders
-			orders := protected.Group("/orders")
+			// ── Transaksi ─────────────────────────────────────
+			transaksi := protected.Group("/transaksi")
 			{
-				orders.POST("/checkout", orderHandler.Checkout)    // POST   /v1/orders/checkout
-				orders.GET("", orderHandler.GetMyOrders)           // GET    /v1/orders
-				orders.GET("/:id", orderHandler.GetOrderByID)      // GET    /v1/orders/:id
+				// Admin & Kasir bisa buat dan lihat transaksi
+				transaksi.POST("",     transaksiHandler.Create)   // POST /v1/transaksi       (input transaksi baru)
+				transaksi.GET("/:id",  transaksiHandler.GetByID)  // GET  /v1/transaksi/:id   (detail transaksi)
+				transaksi.GET("/:id/struk", transaksiHandler.GetStruk) // GET /v1/transaksi/:id/struk (generate struk)
+
+				// Hanya Admin (laporan semua transaksi)
+				adminTrx := transaksi.Group("")
+				adminTrx.Use(middleware.AdminOnly())
+				{
+					adminTrx.GET("", transaksiHandler.GetAll) // GET /v1/transaksi (semua transaksi)
+				}
 			}
 
-			// Admin — order management
-			admin := protected.Group("/admin")
-			admin.Use(middleware.AdminOnly())
+			// ── User Management (Admin only) ──────────────────
+			users := protected.Group("/users")
+			users.Use(middleware.AdminOnly())
 			{
-				admin.GET("/orders", orderHandler.GetAllOrders)                     // GET /v1/admin/orders
-				admin.PUT("/orders/:id/status", orderHandler.UpdateOrderStatus)     // PUT /v1/admin/orders/:id/status
+				users.GET("",        userHandler.GetAll)    // GET    /v1/users
+				users.GET("/:id",    userHandler.GetByID)   // GET    /v1/users/:id
+				users.PUT("/:id",    userHandler.Update)    // PUT    /v1/users/:id
+				users.DELETE("/:id", userHandler.Delete)    // DELETE /v1/users/:id
 			}
 		}
 	}
