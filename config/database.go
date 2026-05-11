@@ -51,12 +51,12 @@ func InitDatabase() {
 	// AutoMigrate: buat/update tabel sesuai struct model
 	// GORM akan buat tabel jika belum ada
 	err = DB.AutoMigrate(
-		&models.User{},
-		&models.Product{},
-		&models.CartItem{},
-		&models.Order{},
-		&models.OrderItem{},
-	)
+    &models.User{},
+    &models.Kategori{},
+    &models.Produk{},
+    &models.Transaksi{},
+    &models.DetailTransaksi{},
+)
 	if err != nil {
 		log.Fatalf("AutoMigrate gagal: %v", err)
 	}
