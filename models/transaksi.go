@@ -13,7 +13,7 @@ type Transaksi struct {
 	IDUser           string    `gorm:"not null;size:20;index"                    json:"id_user"`
 
 	// Relasi
-	User User `gorm:"foreignKey:IDUser;references:IDUser"    json:"user,omitempty"`
+	//User User `gorm:"foreignKey:IDUser;references:IDUser"    json:"user,omitempty"`
 	Detail []DetailTransaksi `gorm:"foreignKey:IDTransaksi" json:"detail,omitempty"`
 }
 
