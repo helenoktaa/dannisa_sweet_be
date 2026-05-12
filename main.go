@@ -31,12 +31,12 @@ func main() {
 	// 5. AutoMigrate — buat/update tabel otomatis sesuai struct model
 	// URUTAN PENTING: tabel yang direferensi FK harus di-migrate duluan
 	err := config.DB.AutoMigrate(
-		&models.Jabatan{},         
-		&models.User{},            
-		&models.Kategori{},        
-		&models.Produk{},          
-		&models.Transaksi{},       
-		&models.DetailTransaksi{}, 
+		&models.Jabatan{},
+		&models.User{},
+		&models.Kategori{},
+		&models.Produk{},
+		&models.Transaksi{},
+		&models.DetailTransaksi{},
 	)
 	if err != nil {
 		log.Fatalf("AutoMigrate gagal: %v", err)
@@ -78,8 +78,12 @@ func seedJabatan() {
 	}
 
 	jabatans := []models.Jabatan{
-		{NamaJabatan: "Admin", Gaji: 5000000},
-		{NamaJabatan: "Kasir", Gaji: 3000000},
+		{IDJabatan: "JAB001", NamaJabatan: "Admin", Gaji: 5000000},
+		{IDJabatan: "JAB002", NamaJabatan: "Kasir", Gaji: 3000000},
+	}
+
+	for _, j := range jabatans {
+		config.DB.FirstOrCreate(&j, models.Jabatan{IDJabatan: j.IDJabatan})
 	}
 
 	if err := config.DB.Create(&jabatans).Error; err != nil {

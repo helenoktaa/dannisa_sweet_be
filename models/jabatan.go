@@ -2,11 +2,10 @@ package models
 
 // Jabatan menyimpan data jabatan karyawan (Admin / Kasir)
 type Jabatan struct {
-	IDJabatan string `gorm:"primaryKey;autoIncrement" json:"id_jabatan"`
+	IDJabatan string `gorm:"primaryKey;size:20" json:"id_jabatan"`
 
 	NamaJabatan string  `gorm:"not null;size:50" json:"nama_jabatan"`
 	Gaji        float64 `gorm:"not null"         json:"gaji"`
-
 	
 }
 

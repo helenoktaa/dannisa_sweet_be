@@ -10,7 +10,7 @@ type Produk struct {
 	IDKategori string     `gorm:"not null;index"        json:"id_kategori"`
 
 	// Relasi
-	Kategori        Kategori          `gorm:"foreignKey:IDKategori"  json:"kategori,omitempty"`
+	Kategori Kategori `gorm:"foreignKey:IDKategori;references:IDKategori" json:"kategori,omitempty"`
 	DetailTransaksi []DetailTransaksi `gorm:"foreignKey:IDProduk"    json:"detail_transaksi,omitempty"`
 }
 

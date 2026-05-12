@@ -2,12 +2,14 @@ package config
 
 import (
 	"fmt"
+	"log"
+	"os"
+
 	"github.com/helenoktaa/dannisa_sweet_be/models"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"log"
-	"os"
+	"gorm.io/gorm/schema"
 )
 
 // DB adalah instance GORM global yang dipakai di seluruh aplikasi
@@ -21,8 +23,7 @@ func InitDatabase() {
 	password := os.Getenv("DB_PASSWORD")
 	dbname := os.Getenv("DB_NAME")
 
-	// Format DSN (Data Source Name) untuk MySQL
-	// Format: user:pass@tcp(host:port)/dbname?params
+	// Format DSN untuk MySQL
 	dsn := fmt.Sprintf(
 		"%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		user, password, host, port, dbname,
@@ -30,7 +31,11 @@ func InitDatabase() {
 
 	// Konfigurasi GORM
 	gormConfig := &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info), // Log semua query SQL
+		Logger:                                   logger.Default.LogMode(logger.Info),
+		DisableForeignKeyConstraintWhenMigrating: true,
+		NamingStrategy: schema.NamingStrategy{
+        SingularTable: true,
+    },
 	}
 
 	// Buka koneksi
@@ -45,22 +50,22 @@ func InitDatabase() {
 	if err != nil {
 		log.Fatalf("Gagal mendapatkan sql.DB: %v", err)
 	}
-	sqlDB.SetMaxOpenConns(25) // Maksimal 25 koneksi terbuka
-	sqlDB.SetMaxIdleConns(10) // Maksimal 10 koneksi idle
+	sqlDB.SetMaxOpenConns(25)
+	sqlDB.SetMaxIdleConns(10)
 
-	// AutoMigrate: buat/update tabel sesuai struct model
-	// GORM akan buat tabel jika belum ada
+	// AutoMigrate: urutan penting!
+	// Tabel yang tidak punya FK harus dibuat duluan
 	err = DB.AutoMigrate(
-    &models.User{},
-    &models.Kategori{},
-    &models.Produk{},
-    &models.Transaksi{},
-    &models.DetailTransaksi{},
-)
+		&models.Jabatan{},         // 1. Jabatan dulu (tidak ada FK)
+		&models.User{},            // 2. User → FK ke Jabatan
+		&models.Kategori{},        // 3. Kategori (tidak ada FK)
+		&models.Produk{},          // 4. Produk → FK ke Kategori
+		&models.Transaksi{},       // 5. Transaksi → FK ke User
+		&models.DetailTransaksi{}, // 6. DetailTransaksi → FK ke Transaksi & Produk
+	)
 	if err != nil {
 		log.Fatalf("AutoMigrate gagal: %v", err)
 	}
 
-	log.Println("Database terhubung dan tabel sudah di-migrate")
-	
+	log.Println("✅ Database dannisa_sweet terhubung dan tabel sudah di-migrate")
 }

@@ -10,15 +10,15 @@ type DetailTransaksi struct {
 	HargaJual   float64 `gorm:"not null"                 json:"harga_jual"` // snapshot harga saat transaksi terjadi
 
 	// Relasi
-	Transaksi Transaksi `gorm:"foreignKey:IDTransaksi" json:"transaksi,omitempty"`
-	Produk    Produk    `gorm:"foreignKey:IDProduk"    json:"produk,omitempty"`
+	Transaksi Transaksi `gorm:"foreignKey:IDTransaksi;references:IDTransaksi" json:"transaksi,omitempty"`
+	Produk    Produk    `gorm:"foreignKey:IDProduk;references:IDProduk" json:"produk,omitempty"`
 }
 
 // DTO - Create Detail Transaksi
 // Dipakai sebagai bagian dari CreateTransaksiRequest (bukan endpoint terpisah)
 type CreateDetailTransaksiRequest struct {
-	IDProduk  string `json:"id_produk"  binding:"required"`
-	Qty       int    `json:"qty"        binding:"required,min=1"`
+	IDProduk string `json:"id_produk"  binding:"required"`
+	Qty      int    `json:"qty"        binding:"required,min=1"`
 }
 
 // Response - satu item detail transaksi
@@ -29,7 +29,7 @@ type DetailTransaksiResponse struct {
 	IDProduk    string         `json:"id_produk"`
 	Qty         int            `json:"qty"`
 	HargaJual   float64        `json:"harga_jual"`
-	SubTotal    float64        `json:"sub_total"`    // dihitung: qty * harga_jual (bukan dari DB)
+	SubTotal    float64        `json:"sub_total"` // dihitung: qty * harga_jual (bukan dari DB)
 	Produk      ProdukResponse `json:"produk"`
 }
 

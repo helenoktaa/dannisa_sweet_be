@@ -2,13 +2,13 @@ package models
 
 // User menyimpan data akun karyawan (Admin atau Kasir)
 type User struct {
-	IDUser        string  `gorm:"primaryKey;size:20"        json:"id_user"`
-	NamaUser      string  `gorm:"not null;size:100"         json:"nama_user"`
-	Email         string  `gorm:"not null;unique;size:100"  json:"email"`
-	Password      string  `gorm:"not null"                  json:"-"` // disembunyikan dari response JSON
-	RekPembayaran string  `gorm:"size:50"                   json:"rek_pembayaran"`
-	Whatsapp      string  `gorm:"size:20"                   json:"whatsapp"`
-	IDJabatan     string     `gorm:"not null;index"            json:"id_jabatan"`
+	IDUser        string `gorm:"primaryKey;size:20"        json:"id_user"`
+	NamaUser      string `gorm:"not null;size:100"         json:"nama_user"`
+	Email         string `gorm:"not null;unique;size:100"  json:"email"`
+	Password      string `gorm:"not null"                  json:"-"` // disembunyikan dari response JSON
+	RekPembayaran string `gorm:"size:50"                   json:"rek_pembayaran"`
+	Whatsapp      string `gorm:"size:20"                   json:"whatsapp"`
+	IDJabatan     string `gorm:"not null;size:20;index"         json:"id_jabatan"`
 
 	// Relasi
 	Jabatan Jabatan `gorm:"foreignKey:IDJabatan;references:IDJabatan" json:"jabatan,omitempty"`
@@ -22,7 +22,7 @@ type RegisterRequest struct {
 	Password      string `json:"password"        binding:"required,min=6"`
 	RekPembayaran string `json:"rek_pembayaran"`
 	Whatsapp      string `json:"whatsapp"`
-	IDJabatan     string    `json:"id_jabatan"      binding:"required"`
+	IDJabatan     string `json:"id_jabatan"      binding:"required"`
 }
 
 type LoginRequest struct {
@@ -34,7 +34,7 @@ type UpdateUserRequest struct {
 	NamaUser      string `json:"nama_user"`
 	RekPembayaran string `json:"rek_pembayaran"`
 	Whatsapp      string `json:"whatsapp"`
-	IDJabatan     string    `json:"id_jabatan"`
+	IDJabatan     string `json:"id_jabatan"`
 }
 
 type UpdatePasswordRequest struct {
