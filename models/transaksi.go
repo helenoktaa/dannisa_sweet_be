@@ -23,6 +23,7 @@ type CreateTransaksiRequest struct {
 	IDTransaksi      string                         `json:"id_transaksi"      binding:"required"`
 	NamaCustomer     string                         `json:"nama_customer"     binding:"required"`
 	MetodePembayaran string                         `json:"metode_pembayaran" binding:"required,oneof=Tunai Transfer QRIS"`
+	JumlahBayar      float64                        `json:"jumlah_bayar"      binding:"required,min=0"`
 	IDUser           string                         `json:"id_user"           binding:"required"`
 	Detail           []CreateDetailTransaksiRequest `json:"detail"            binding:"required,min=1,dive"`
 }
@@ -71,4 +72,18 @@ type LaporanResponse struct {
 	TotalModal     float64             `json:"total_modal"`     // SUM(qty * harga_modal dari tabel produk)
 	TotalLaba      float64             `json:"total_laba"`      // total_penjualan - total_modal
 	Transaksis     []TransaksiResponse `json:"transaksis"`
+}
+
+type StrukResponse struct {
+    IDTransaksi      string                    `json:"id_transaksi"`
+    TanggalTransaksi time.Time                 `json:"tanggal_transaksi"`
+    NamaCustomer     string                    `json:"nama_customer"`
+    NamaKasir        string                    `json:"nama_kasir"`
+    MetodePembayaran string                    `json:"metode_pembayaran"`
+    StatusPembayaran string                    `json:"status_pembayaran"`
+    Detail           []DetailTransaksiResponse `json:"detail"`
+    TotalItem        int                       `json:"total_item"`
+    TotalPenjualan   float64                   `json:"total_penjualan"`
+    JumlahBayar      float64                   `json:"jumlah_bayar"`
+    Kembalian        float64                   `json:"kembalian"`
 }

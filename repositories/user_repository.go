@@ -59,3 +59,17 @@ func (r *UserRepository) Create(user *models.User) error {
 func (r *UserRepository) Update(user *models.User) error {
 	return config.DB.Save(user).Error
 }
+
+// Find All Users
+func (r *UserRepository) FindAll(users *[]models.User) error {
+	return config.DB.
+		Preload("Jabatan").
+		Find(users).Error
+}
+
+// Delete User
+func (r *UserRepository) Delete(id string) error {
+	return config.DB.
+		Where("id_user = ?", id).
+		Delete(&models.User{}).Error
+}
