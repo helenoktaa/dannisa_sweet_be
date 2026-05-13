@@ -105,7 +105,7 @@ func (s *TransaksiService) GetByID(id string) (*models.TransaksiResponse, error)
 	return s.buildResponse(transaksi), nil
 }
 
-// GetStruk generate data struk dari transaksi
+// GetInvoice generate data invoice dari transaksi
 func (s *TransaksiService) GetInvoice(id string) (*models.InvoiceResponse, error) {
     transaksi, err := s.transaksiRepo.FindByID(id)
     if err != nil {
@@ -114,25 +114,31 @@ func (s *TransaksiService) GetInvoice(id string) (*models.InvoiceResponse, error
 
     resp := s.buildResponse(transaksi)
 
-    return &models.InvoiceResponse{
-        IDTransaksi:      transaksi.IDTransaksi,
-        TanggalTransaksi: transaksi.TanggalTransaksi,
-        NamaCustomer:     transaksi.NamaCustomer,
-        NamaKasir:        transaksi.User.NamaUser,
-        MetodePembayaran: transaksi.MetodePembayaran,
-        StatusPembayaran: transaksi.StatusPembayaran,
-        Detail:           resp.Detail,
-        TotalItem:        resp.TotalItem,
-        TotalPenjualan:   resp.TotalPenjualan,
-        JumlahBayar:      transaksi.JumlahBayar,
-        Kembalian:        transaksi.JumlahBayar - resp.TotalPenjualan,
-        InfoPembayaran: models.InfoPembayaran{
-            NamaRekening: transaksi.User.NamaUser,
-            NoRekening:   transaksi.User.RekPembayaran,
-            WhatsApp:     transaksi.User.Whatsapp,
-            Catatan:      "Mohon transfer sesuai nominal dan konfirmasi via WhatsApp",
-        },
-    }, nil
+	// Hitung kembalian hanya kalau sudah bayar
+kembalian := 0.0
+if transaksi.JumlahBayar > 0 {
+    kembalian = transaksi.JumlahBayar - resp.TotalPenjualan
+}
+
+return &models.InvoiceResponse{
+    IDTransaksi:      transaksi.IDTransaksi,
+    TanggalTransaksi: transaksi.TanggalTransaksi,
+    NamaCustomer:     transaksi.NamaCustomer,
+    NamaKasir:        transaksi.User.NamaUser,
+    MetodePembayaran: transaksi.MetodePembayaran,
+    StatusPembayaran: transaksi.StatusPembayaran,
+    Detail:           resp.Detail,
+    TotalItem:        resp.TotalItem,
+    TotalPenjualan:   resp.TotalPenjualan,
+    JumlahBayar:      transaksi.JumlahBayar,
+    Kembalian:        kembalian, 
+    InfoPembayaran: models.InfoPembayaran{
+        NamaRekening: transaksi.User.NamaUser,
+        NoRekening:   transaksi.User.RekPembayaran,
+        WhatsApp:     transaksi.User.Whatsapp,
+        Catatan:      "Mohon transfer sesuai nominal dan konfirmasi via WhatsApp",
+    },
+}, nil
 }
 
 // GetLaporan laporan penjualan dengan kalkulasi modal dan laba
@@ -169,16 +175,17 @@ func (s *TransaksiService) GetLaporan(req models.LaporanRequest) (*models.Lapora
 
 // UpdateStatus update status pembayaran
 func (s *TransaksiService) UpdateStatus(id string, req models.UpdateStatusPembayaranRequest) (*models.TransaksiResponse, error) {
-	if _, err := s.transaksiRepo.FindByID(id); err != nil {
-		return nil, errors.New("transaksi tidak ditemukan")
-	}
+    if _, err := s.transaksiRepo.FindByID(id); err != nil {
+        return nil, errors.New("transaksi tidak ditemukan")
+    }
 
-	if err := s.transaksiRepo.UpdateStatus(id, req.StatusPembayaran); err != nil {
-		return nil, errors.New("gagal update status")
-	}
+    // Tambah req.JumlahBayar sebagai parameter
+    if err := s.transaksiRepo.UpdateStatus(id, req.StatusPembayaran, req.JumlahBayar); err != nil {
+        return nil, errors.New("gagal update status")
+    }
 
-	updated, _ := s.transaksiRepo.FindByID(id)
-	return s.buildResponse(updated), nil
+    updated, _ := s.transaksiRepo.FindByID(id)
+    return s.buildResponse(updated), nil
 }
 
 // buildResponse helper — konversi Transaksi model ke TransaksiResponse

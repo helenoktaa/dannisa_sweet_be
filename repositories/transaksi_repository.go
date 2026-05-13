@@ -87,9 +87,15 @@ func (r *TransaksiRepository) Create(transaksi *models.Transaksi) error {
 	})
 }
 
-// UpdateStatus update status pembayaran transaksi
-func (r *TransaksiRepository) UpdateStatus(id string, status string) error {
-	return config.DB.Model(&models.Transaksi{}).
-		Where("id_transaksi = ?", id).
-		Update("status_pembayaran", status).Error
+// UpdateStatus update status pembayaran dan jumlah bayar transaksi
+func (r *TransaksiRepository) UpdateStatus(id string, status string, jumlahBayar float64) error {
+    updates := map[string]interface{}{
+        "status_pembayaran": status,
+    }
+    if jumlahBayar > 0 {
+        updates["jumlah_bayar"] = jumlahBayar
+    }
+    return config.DB.Model(&models.Transaksi{}).
+        Where("id_transaksi = ?", id).
+        Updates(updates).Error
 }
