@@ -3,7 +3,7 @@ package repositories
 import (
 	"github.com/helenoktaa/dannisa_sweet_be/config"
 	"github.com/helenoktaa/dannisa_sweet_be/models"
-	"gorm.io/gorm" 
+	"gorm.io/gorm"
 )
 
 type TransaksiRepository struct{}
@@ -55,21 +55,24 @@ func (r *TransaksiRepository) FindByID(id string) (*models.Transaksi, error) {
 // Create menyimpan transaksi baru beserta detail-nya dalam satu transaksi DB
 func (r *TransaksiRepository) Create(transaksi *models.Transaksi) error {
 	return config.DB.Transaction(func(tx *gorm.DB) error {
-		// 1. Simpan transaksi header
+		// Pisahkan detail dari transaksi sebelum insert header
+		details := transaksi.Detail
+		transaksi.Detail = nil // ← kosongkan dulu biar GORM tidak auto-insert detail
+
+		// 1. Simpan transaksi header dulu
 		if err := tx.Create(transaksi).Error; err != nil {
 			return err
 		}
 
-		// 2. Simpan semua detail & update stok produk
-		for _, detail := range transaksi.Detail {
+		// 2. Simpan detail satu per satu + update stok
+		for _, detail := range details {
 			detail.IDTransaksi = transaksi.IDTransaksi
 
-			// Simpan detail transaksi
 			if err := tx.Create(&detail).Error; err != nil {
 				return err
 			}
 
-			// Update stok produk (kurangi sesuai qty)
+			// Kurangi stok produk
 			if err := tx.Model(&models.Produk{}).
 				Where("id_produk = ?", detail.IDProduk).
 				UpdateColumn("stok", gorm.Expr("stok - ?", detail.Qty)).
@@ -78,6 +81,8 @@ func (r *TransaksiRepository) Create(transaksi *models.Transaksi) error {
 			}
 		}
 
+		// 3. Kembalikan detail ke struct (untuk response)
+		transaksi.Detail = details
 		return nil
 	})
 }
