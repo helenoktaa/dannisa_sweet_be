@@ -23,7 +23,7 @@ func main() {
 	// 3. Inisialisasi Firebase Admin SDK Dannisa Sweet
 	// Pastikan file firebase-service-account.json sudah diganti
 	// dengan yang baru dari Firebase project Dannisa Sweet
-	config.InitFirebase()
+	
 
 	// 4. Inisialisasi koneksi database MySQL (XAMPP)
 	config.InitDatabase()
