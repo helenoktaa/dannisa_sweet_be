@@ -94,25 +94,24 @@ func (h *TransaksiHandler) GetByID(c *gin.Context) {
 }
 
 // GetStruk - GET /v1/transaksi/:id/struk
-// Generate data struk dari transaksi
-func (h *TransaksiHandler) GetStruk(c *gin.Context) {
-	id := c.Param("id")
+// Generate data invoice dari transaksi
+func (h *TransaksiHandler) GetInvoice(c *gin.Context) {
+    id := c.Param("id")
 
-	struk, err := h.transaksiService.GetStruk(id)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"success": false,
-			"message": "Transaksi tidak ditemukan",
-		})
-		return
-	}
+    invoice, err := h.transaksiService.GetInvoice(id)
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{
+            "success": false,
+            "message": "Transaksi tidak ditemukan",
+        })
+        return
+    }
 
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data":    struk,
-	})
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "data":    invoice,
+    })
 }
-
 // GetLaporan - GET /v1/transaksi/laporan (Admin only)
 // Laporan penjualan dengan total modal, penjualan, dan laba
 func (h *TransaksiHandler) GetLaporan(c *gin.Context) {

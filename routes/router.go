@@ -109,7 +109,7 @@ func SetupRouter() *gin.Engine {
 				// Admin & Kasir
 				transaksi.POST("",          transaksiHandler.Create)   // POST /v1/transaksi
 				transaksi.GET("/:id",       transaksiHandler.GetByID)  // GET  /v1/transaksi/:id
-				transaksi.GET("/:id/struk", transaksiHandler.GetStruk) // GET  /v1/transaksi/:id/struk
+				transaksi.GET("/:id/invoice", transaksiHandler.GetInvoice) // GET  /v1/transaksi/:id/invoice
 
 				// Admin only
 				adminTrx := transaksi.Group("")

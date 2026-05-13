@@ -59,7 +59,7 @@ func (s *TransaksiService) Create(req models.CreateTransaksiRequest) (*models.Tr
 		NamaCustomer:     req.NamaCustomer,
 		JumlahBayar:      req.JumlahBayar,
 		MetodePembayaran: req.MetodePembayaran,
-		StatusPembayaran: "Lunas", // langsung lunas karena bayar di tempat
+		StatusPembayaran: "Pending", // confirm by admin/kasir
 		IDUser:           req.IDUser,
 		Detail:           details,
 	}
@@ -106,27 +106,33 @@ func (s *TransaksiService) GetByID(id string) (*models.TransaksiResponse, error)
 }
 
 // GetStruk generate data struk dari transaksi
-func (s *TransaksiService) GetStruk(id string) (*models.StrukResponse, error) {
-	transaksi, err := s.transaksiRepo.FindByID(id)
-	if err != nil {
-		return nil, errors.New("transaksi tidak ditemukan")
-	}
+func (s *TransaksiService) GetInvoice(id string) (*models.InvoiceResponse, error) {
+    transaksi, err := s.transaksiRepo.FindByID(id)
+    if err != nil {
+        return nil, errors.New("transaksi tidak ditemukan")
+    }
 
-	resp := s.buildResponse(transaksi)
+    resp := s.buildResponse(transaksi)
 
-	return &models.StrukResponse{
-		IDTransaksi:      transaksi.IDTransaksi,
-		TanggalTransaksi: transaksi.TanggalTransaksi,
-		NamaCustomer:     transaksi.NamaCustomer,
-		NamaKasir:        transaksi.User.NamaUser,
-		MetodePembayaran: transaksi.MetodePembayaran,
-		StatusPembayaran: transaksi.StatusPembayaran,
-		Detail:           resp.Detail,
-		TotalItem:        resp.TotalItem,
-		TotalPenjualan:   resp.TotalPenjualan,
-		JumlahBayar:      transaksi.JumlahBayar,
-		Kembalian:        transaksi.JumlahBayar - resp.TotalPenjualan,
-	}, nil
+    return &models.InvoiceResponse{
+        IDTransaksi:      transaksi.IDTransaksi,
+        TanggalTransaksi: transaksi.TanggalTransaksi,
+        NamaCustomer:     transaksi.NamaCustomer,
+        NamaKasir:        transaksi.User.NamaUser,
+        MetodePembayaran: transaksi.MetodePembayaran,
+        StatusPembayaran: transaksi.StatusPembayaran,
+        Detail:           resp.Detail,
+        TotalItem:        resp.TotalItem,
+        TotalPenjualan:   resp.TotalPenjualan,
+        JumlahBayar:      transaksi.JumlahBayar,
+        Kembalian:        transaksi.JumlahBayar - resp.TotalPenjualan,
+        InfoPembayaran: models.InfoPembayaran{
+            NamaRekening: transaksi.User.NamaUser,
+            NoRekening:   transaksi.User.RekPembayaran,
+            WhatsApp:     transaksi.User.Whatsapp,
+            Catatan:      "Mohon transfer sesuai nominal dan konfirmasi via WhatsApp",
+        },
+    }, nil
 }
 
 // GetLaporan laporan penjualan dengan kalkulasi modal dan laba

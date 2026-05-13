@@ -20,17 +20,19 @@ type Transaksi struct {
 // DTO - Create Transaksi
 // Detail langsung disertakan saat buat transaksi (satu request)
 type CreateTransaksiRequest struct {
-	IDTransaksi      string                         `json:"id_transaksi"      binding:"required"`
-	NamaCustomer     string                         `json:"nama_customer"     binding:"required"`
-	MetodePembayaran string                         `json:"metode_pembayaran" binding:"required,oneof=Tunai Transfer QRIS"`
-	JumlahBayar      float64                        `json:"jumlah_bayar"      binding:"required,min=0"`
-	IDUser           string                         `json:"id_user"           binding:"required"`
-	Detail           []CreateDetailTransaksiRequest `json:"detail"            binding:"required,min=1,dive"`
+    IDTransaksi      string                         `json:"id_transaksi"      binding:"required"`
+    NamaCustomer     string                         `json:"nama_customer"     binding:"required"`
+    MetodePembayaran string                         `json:"metode_pembayaran" binding:"required,oneof=Tunai Transfer QRIS"`
+    // JumlahBayar tidak wajib saat create — diisi saat update status
+    JumlahBayar      float64                        `json:"jumlah_bayar"`
+    IDUser           string                         `json:"id_user"           binding:"required"`
+    Detail           []CreateDetailTransaksiRequest `json:"detail"            binding:"required,min=1,dive"`
 }
 
 // DTO - Update Status Pembayaran
 type UpdateStatusPembayaranRequest struct {
-	StatusPembayaran string `json:"status_pembayaran" binding:"required,oneof=Pending Lunas"`
+    StatusPembayaran string  `json:"status_pembayaran" binding:"required,oneof=Pending Lunas"`
+    JumlahBayar      float64 `json:"jumlah_bayar"      binding:"omitempty,min=0"`
 }
 
 // Response - satu transaksi
@@ -74,7 +76,7 @@ type LaporanResponse struct {
 	Transaksis     []TransaksiResponse `json:"transaksis"`
 }
 
-type StrukResponse struct {
+type InvoiceResponse struct {
     IDTransaksi      string                    `json:"id_transaksi"`
     TanggalTransaksi time.Time                 `json:"tanggal_transaksi"`
     NamaCustomer     string                    `json:"nama_customer"`
@@ -84,6 +86,14 @@ type StrukResponse struct {
     Detail           []DetailTransaksiResponse `json:"detail"`
     TotalItem        int                       `json:"total_item"`
     TotalPenjualan   float64                   `json:"total_penjualan"`
-    JumlahBayar      float64                   `json:"jumlah_bayar"`
-    Kembalian        float64                   `json:"kembalian"`
+    JumlahBayar      float64                   `json:"jumlah_bayar"`   
+    Kembalian        float64                   `json:"kembalian"`      
+    InfoPembayaran   InfoPembayaran            `json:"info_pembayaran"`
+}
+
+type InfoPembayaran struct {
+    NamaRekening string `json:"nama_rekening"` // Anisa Dian Utami
+    NoRekening   string `json:"no_rekening"`   // BCA 8880587898
+    WhatsApp     string `json:"whatsapp"`      // 085156194878
+    Catatan      string `json:"catatan"`       // "Mohon transfer sesuai nominal dan konfirmasi via WA"
 }
