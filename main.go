@@ -29,7 +29,6 @@ func main() {
 	config.InitDatabase()
 
 	// 5. AutoMigrate — buat/update tabel otomatis sesuai struct model
-	// URUTAN PENTING: tabel yang direferensi FK harus di-migrate duluan
 	err := config.DB.AutoMigrate(
 		&models.Jabatan{},
 		&models.User{},
