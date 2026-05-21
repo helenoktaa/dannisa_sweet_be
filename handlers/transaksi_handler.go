@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -31,10 +32,18 @@ func (h *TransaksiHandler) Create(c *gin.Context) {
 		return
 	}
 
-	// Ambil id_user dari JWT (kasir yang sedang login)
-	idUser := c.GetString("id_user")
-	req.IDUser = idUser
+	// ── Fix: ambil id_user dari context dengan type assertion ──
+	idUserRaw, exists := c.Get("id_user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"message": "User tidak terautentikasi",
+		})
+		return
+	}
+	req.IDUser = fmt.Sprintf("%v", idUserRaw)
 
+	// ── Panggil service ────────────────────────────────────────
 	transaksi, err := h.transaksiService.Create(req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -57,8 +66,9 @@ func (h *TransaksiHandler) GetAll(c *gin.Context) {
 	// Query params opsional untuk filter tanggal
 	tanggalMulai := c.Query("tanggal_mulai")
 	tanggalAkhir := c.Query("tanggal_akhir")
+	status := c.Query("status")
 
-	transaksis, err := h.transaksiService.GetAll(tanggalMulai, tanggalAkhir)
+	transaksis, err := h.transaksiService.GetAll(tanggalMulai, tanggalAkhir, status)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
@@ -96,22 +106,23 @@ func (h *TransaksiHandler) GetByID(c *gin.Context) {
 // GetStruk - GET /v1/transaksi/:id/struk
 // Generate data invoice dari transaksi
 func (h *TransaksiHandler) GetInvoice(c *gin.Context) {
-    id := c.Param("id")
+	id := c.Param("id")
 
-    invoice, err := h.transaksiService.GetInvoice(id)
-    if err != nil {
-        c.JSON(http.StatusNotFound, gin.H{
-            "success": false,
-            "message": "Transaksi tidak ditemukan",
-        })
-        return
-    }
+	invoice, err := h.transaksiService.GetInvoice(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"success": false,
+			"message": "Transaksi tidak ditemukan",
+		})
+		return
+	}
 
-    c.JSON(http.StatusOK, gin.H{
-        "success": true,
-        "data":    invoice,
-    })
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    invoice,
+	})
 }
+
 // GetLaporan - GET /v1/transaksi/laporan (Admin only)
 // Laporan penjualan dengan total modal, penjualan, dan laba
 func (h *TransaksiHandler) GetLaporan(c *gin.Context) {

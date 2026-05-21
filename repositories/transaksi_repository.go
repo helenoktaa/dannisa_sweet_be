@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"github.com/helenoktaa/dannisa_sweet_be/config"
 	"github.com/helenoktaa/dannisa_sweet_be/models"
 	"gorm.io/gorm"
@@ -13,7 +14,7 @@ func NewTransaksiRepository() *TransaksiRepository {
 }
 
 // FindAll mengambil semua transaksi, bisa filter by tanggal
-func (r *TransaksiRepository) FindAll(tanggalMulai, tanggalAkhir string) ([]models.Transaksi, error) {
+func (r *TransaksiRepository) FindAll(tanggalMulai, tanggalAkhir, status string) ([]models.Transaksi, error) {
 	var transaksis []models.Transaksi
 
 	query := config.DB.
@@ -31,6 +32,10 @@ func (r *TransaksiRepository) FindAll(tanggalMulai, tanggalAkhir string) ([]mode
 			tanggalAkhir+" 23:59:59",
 		)
 	}
+
+	 if status != "" {
+        query = query.Where("status_pembayaran = ?", status)
+    }
 
 	result := query.Order("tanggal_transaksi DESC").Find(&transaksis)
 	return transaksis, result.Error
@@ -98,4 +103,24 @@ func (r *TransaksiRepository) UpdateStatus(id string, status string, jumlahBayar
     return config.DB.Model(&models.Transaksi{}).
         Where("id_transaksi = ?", id).
         Updates(updates).Error
+}
+
+// GetLastNumber ambil nomor urut terakhir dari id_transaksi
+// Format ID: TDS0001 → ambil angka 0001 → return 1
+func (r *TransaksiRepository) GetLastNumber() (int, error) {
+    var lastID string
+    result := config.DB.Model(&models.Transaksi{}).
+        Select("id_transaksi").
+        Order("id_transaksi DESC").
+        Limit(1).
+        Pluck("id_transaksi", &lastID)
+
+    if result.Error != nil || lastID == "" {
+        return 0, nil // belum ada transaksi → mulai dari 0
+    }
+
+    // Parse angka dari "TDS0001" → 1
+    var number int
+    fmt.Sscanf(lastID, "TDS%d", &number)
+    return number, nil
 }

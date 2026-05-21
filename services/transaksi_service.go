@@ -23,6 +23,13 @@ func NewTransaksiService() *TransaksiService {
 
 // Create membuat transaksi baru beserta detail itemnya
 func (s *TransaksiService) Create(req models.CreateTransaksiRequest) (*models.TransaksiResponse, error) {
+	// Generate ID otomatis format TDS0001
+    lastNumber, err := s.transaksiRepo.GetLastNumber()
+    if err != nil {
+        return nil, errors.New("gagal generate ID transaksi")
+    }
+    req.IDTransaksi = fmt.Sprintf("TDS%04d", lastNumber+1)
+	
 	// 1. Validasi setiap produk — cek stok cukup
 	for _, item := range req.Detail {
 		produk, err := s.produkRepo.FindByID(item.IDProduk)
@@ -79,21 +86,21 @@ func (s *TransaksiService) Create(req models.CreateTransaksiRequest) (*models.Tr
 }
 
 // GetAll mengambil semua transaksi dengan filter tanggal opsional
-func (s *TransaksiService) GetAll(tanggalMulai, tanggalAkhir string) (*models.TransaksiListResponse, error) {
-	transaksis, err := s.transaksiRepo.FindAll(tanggalMulai, tanggalAkhir)
-	if err != nil {
-		return nil, err
-	}
+func (s *TransaksiService) GetAll(tanggalMulai, tanggalAkhir, status string) (*models.TransaksiListResponse, error) {
+    transaksis, err := s.transaksiRepo.FindAll(tanggalMulai, tanggalAkhir, status)
+    if err != nil {
+        return nil, err
+    }
 
-	var responses []models.TransaksiResponse
-	for _, t := range transaksis {
-		responses = append(responses, *s.buildResponse(&t))
-	}
+    var responses []models.TransaksiResponse
+    for _, t := range transaksis {
+        responses = append(responses, *s.buildResponse(&t))
+    }
 
-	return &models.TransaksiListResponse{
-		Data:  responses,
-		Total: int64(len(responses)),
-	}, nil
+    return &models.TransaksiListResponse{
+        Data:  responses,
+        Total: int64(len(responses)),
+    }, nil
 }
 
 // GetByID mengambil satu transaksi
@@ -143,7 +150,7 @@ return &models.InvoiceResponse{
 
 // GetLaporan laporan penjualan dengan kalkulasi modal dan laba
 func (s *TransaksiService) GetLaporan(req models.LaporanRequest) (*models.LaporanResponse, error) {
-	transaksis, err := s.transaksiRepo.FindAll(req.TanggalMulai, req.TanggalAkhir)
+	transaksis, err := s.transaksiRepo.FindAll(req.TanggalMulai, req.TanggalAkhir, "")
 	if err != nil {
 		return nil, err
 	}
