@@ -16,7 +16,7 @@ type User struct {
 
 // DTO
 type RegisterRequest struct {
-	IDUser        string `json:"id_user"         binding:"required"`
+	IDUser        string `json:"id_user"`
 	NamaUser      string `json:"nama_user"       binding:"required"`
 	Email         string `json:"email"           binding:"required,email"`
 	Password      string `json:"password"        binding:"required,min=6"`

@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"fmt"
 	"github.com/helenoktaa/dannisa_sweet_be/config"
 	"github.com/helenoktaa/dannisa_sweet_be/models"
 )
@@ -72,4 +73,23 @@ func (r *UserRepository) Delete(id string) error {
 	return config.DB.
 		Where("id_user = ?", id).
 		Delete(&models.User{}).Error
+}
+
+// GetLastNumber ambil nomor urut terakhir dari id_user
+// Format ID: UDS01 → ambil angka 01 → return 1
+func (r *UserRepository) GetLastNumber() (int, error) {
+    var lastID string
+    result := config.DB.Model(&models.User{}).
+        Select("id_user").
+        Order("id_user DESC").
+        Limit(1).
+        Pluck("id_user", &lastID)
+
+    if result.Error != nil || lastID == "" {
+        return 0, nil
+    }
+
+    var number int
+    fmt.Sscanf(lastID, "UDS%d", &number)
+    return number, nil
 }

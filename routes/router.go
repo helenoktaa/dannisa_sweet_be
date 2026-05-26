@@ -24,12 +24,12 @@ func SetupRouter() *gin.Engine {
 	})
 
 	// ─── Init handlers ────────────────────────────────────────
-	authHandler      := handlers.NewAuthHandler()
-	produkHandler    := handlers.NewProductHandler()
-	kategoriHandler  := handlers.NewKategoriHandler()
-	jabatanHandler   := handlers.NewJabatanHandler()
+	authHandler := handlers.NewAuthHandler()
+	produkHandler := handlers.NewProductHandler()
+	kategoriHandler := handlers.NewKategoriHandler()
+	jabatanHandler := handlers.NewJabatanHandler()
 	transaksiHandler := handlers.NewTransaksiHandler()
-	userHandler      := handlers.NewUserHandler()
+	userHandler := handlers.NewUserHandler()
 
 	// ─── API v1 group ─────────────────────────────────────────
 	v1 := r.Group("/v1")
@@ -45,7 +45,7 @@ func SetupRouter() *gin.Engine {
 		// ── Auth routes (public, tidak butuh JWT) ─────────────
 		auth := v1.Group("/auth")
 		{
-			auth.POST("/login",    authHandler.Login)    // POST /v1/auth/login
+			auth.POST("/login", authHandler.Login)       // POST /v1/auth/login
 			auth.POST("/register", authHandler.Register) // POST /v1/auth/register
 		}
 
@@ -54,21 +54,21 @@ func SetupRouter() *gin.Engine {
 		protected.Use(middleware.AuthMiddleware())
 		{
 			// ── Profile (semua role bisa akses) ───────────────
-			protected.GET("/auth/profile",  authHandler.GetProfile)    // GET /v1/auth/profile
-			protected.PUT("/auth/profile",  authHandler.UpdateProfile)  // PUT /v1/auth/profile
+			protected.GET("/auth/profile", authHandler.GetProfile)      // GET /v1/auth/profile
+			protected.PUT("/auth/profile", authHandler.UpdateProfile)   // PUT /v1/auth/profile
 			protected.PUT("/auth/password", authHandler.UpdatePassword) // PUT /v1/auth/password
 
 			// ── Produk (GET: Admin & Kasir | CUD: Admin only) ─
 			produk := protected.Group("/produk")
 			{
-				produk.GET("",     produkHandler.GetAll)   // GET /v1/produk
-				produk.GET("/:id", produkHandler.GetByID)  // GET /v1/produk/:id
+				produk.GET("", produkHandler.GetAll)      // GET /v1/produk
+				produk.GET("/:id", produkHandler.GetByID) // GET /v1/produk/:id
 
 				adminProduk := produk.Group("")
 				adminProduk.Use(middleware.AdminOnly())
 				{
-					adminProduk.POST("",       produkHandler.Create) // POST   /v1/produk
-					adminProduk.PUT("/:id",    produkHandler.Update) // PUT    /v1/produk/:id
+					adminProduk.POST("", produkHandler.Create)       // POST   /v1/produk
+					adminProduk.PUT("/:id", produkHandler.Update)    // PUT    /v1/produk/:id
 					adminProduk.DELETE("/:id", produkHandler.Delete) // DELETE /v1/produk/:id
 				}
 			}
@@ -76,14 +76,14 @@ func SetupRouter() *gin.Engine {
 			// ── Kategori (GET: Admin & Kasir | CUD: Admin only) ─
 			kategori := protected.Group("/kategori")
 			{
-				kategori.GET("",     kategoriHandler.GetAll)   // GET /v1/kategori
-				kategori.GET("/:id", kategoriHandler.GetByID)  // GET /v1/kategori/:id
+				kategori.GET("", kategoriHandler.GetAll)      // GET /v1/kategori
+				kategori.GET("/:id", kategoriHandler.GetByID) // GET /v1/kategori/:id
 
 				adminKategori := kategori.Group("")
 				adminKategori.Use(middleware.AdminOnly())
 				{
-					adminKategori.POST("",       kategoriHandler.Create) // POST   /v1/kategori
-					adminKategori.PUT("/:id",    kategoriHandler.Update) // PUT    /v1/kategori/:id
+					adminKategori.POST("", kategoriHandler.Create)       // POST   /v1/kategori
+					adminKategori.PUT("/:id", kategoriHandler.Update)    // PUT    /v1/kategori/:id
 					adminKategori.DELETE("/:id", kategoriHandler.Delete) // DELETE /v1/kategori/:id
 				}
 			}
@@ -91,33 +91,33 @@ func SetupRouter() *gin.Engine {
 			// ── Jabatan (GET: Admin & Kasir | CUD: Admin only) ─
 			jabatan := protected.Group("/jabatan")
 			{
-				jabatan.GET("",     jabatanHandler.GetAll)   // GET /v1/jabatan
-				jabatan.GET("/:id", jabatanHandler.GetByID)  // GET /v1/jabatan/:id
+				jabatan.GET("", jabatanHandler.GetAll)      // GET /v1/jabatan
+				jabatan.GET("/:id", jabatanHandler.GetByID) // GET /v1/jabatan/:id
 
 				adminJabatan := jabatan.Group("")
 				adminJabatan.Use(middleware.AdminOnly())
 				{
-					adminJabatan.POST("",       jabatanHandler.Create) // POST   /v1/jabatan
-					adminJabatan.PUT("/:id",    jabatanHandler.Update) // PUT    /v1/jabatan/:id
+					adminJabatan.POST("", jabatanHandler.Create)       // POST   /v1/jabatan
+					adminJabatan.PUT("/:id", jabatanHandler.Update)    // PUT    /v1/jabatan/:id
 					adminJabatan.DELETE("/:id", jabatanHandler.Delete) // DELETE /v1/jabatan/:id
 				}
 			}
 
-			// ── Transaksi ─────────────────────────────────────
+			// ── Transaksi ─────────────────────────────────────────────
 			transaksi := protected.Group("/transaksi")
 			{
-				// Admin & Kasir
-				transaksi.POST("",          transaksiHandler.Create)   // POST /v1/transaksi
-				transaksi.GET("/:id",       transaksiHandler.GetByID)  // GET  /v1/transaksi/:id
-				transaksi.GET("/:id/invoice", transaksiHandler.GetInvoice) // GET  /v1/transaksi/:id/invoice
+				// Admin & Kasir boleh akses
+				transaksi.POST("", transaksiHandler.Create)
+				transaksi.GET("", transaksiHandler.GetAll)
+				transaksi.GET("/:id", transaksiHandler.GetByID)
+				transaksi.GET("/:id/invoice", transaksiHandler.GetInvoice)
 
 				// Admin only
 				adminTrx := transaksi.Group("")
 				adminTrx.Use(middleware.AdminOnly())
 				{
-					adminTrx.GET("",            transaksiHandler.GetAll)       // GET /v1/transaksi
-					adminTrx.GET("/laporan",    transaksiHandler.GetLaporan)   // GET /v1/transaksi/laporan
-					adminTrx.PUT("/:id/status", transaksiHandler.UpdateStatus) // PUT /v1/transaksi/:id/status
+					adminTrx.GET("/laporan", transaksiHandler.GetLaporan)
+					adminTrx.PUT("/:id/status", transaksiHandler.UpdateStatus)
 				}
 			}
 
@@ -125,10 +125,10 @@ func SetupRouter() *gin.Engine {
 			users := protected.Group("/users")
 			users.Use(middleware.AdminOnly())
 			{
-				users.GET("",        userHandler.GetAll)    // GET    /v1/users
-				users.GET("/:id",    userHandler.GetByID)   // GET    /v1/users/:id
-				users.PUT("/:id",    userHandler.Update)    // PUT    /v1/users/:id
-				users.DELETE("/:id", userHandler.Delete)    // DELETE /v1/users/:id
+				users.GET("", userHandler.GetAll)        // GET    /v1/users
+				users.GET("/:id", userHandler.GetByID)   // GET    /v1/users/:id
+				users.PUT("/:id", userHandler.Update)    // PUT    /v1/users/:id
+				users.DELETE("/:id", userHandler.Delete) // DELETE /v1/users/:id
 			}
 		}
 	}

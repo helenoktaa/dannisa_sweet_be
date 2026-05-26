@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"errors"
 	"os"
 	"time"
@@ -32,6 +33,13 @@ func (s *AuthService) Register(req models.RegisterRequest) (*models.UserResponse
 		return nil, errors.New("email sudah digunakan")
 	}
 
+	 // ── Generate id_user otomatis ──────────────────────────
+    lastNumber, err := s.userRepo.GetLastNumber()
+    if err != nil {
+        return nil, errors.New("gagal generate ID user")
+    }
+    generatedID := fmt.Sprintf("UDS%02d", lastNumber+1)
+
 	// hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword(
 		[]byte(req.Password),
@@ -44,7 +52,7 @@ func (s *AuthService) Register(req models.RegisterRequest) (*models.UserResponse
 
 	// buat object user
 	user := models.User{
-		IDUser:        req.IDUser,
+		 IDUser:       generatedID,
 		NamaUser:      req.NamaUser,
 		Email:         req.Email,
 		Password:      string(hashedPassword),
