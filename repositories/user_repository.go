@@ -93,3 +93,17 @@ func (r *UserRepository) GetLastNumber() (int, error) {
     fmt.Sscanf(lastID, "UDS%d", &number)
     return number, nil
 }
+
+// FindAdminOwner cari user dengan jabatan Admin
+func (r *UserRepository) FindAdminOwner() (*models.User, error) {
+    var user models.User
+    result := config.DB.
+        Preload("Jabatan").
+        Joins("JOIN jabatan ON jabatan.id_jabatan = user.id_jabatan").
+        Where("jabatan.nama_jabatan = ?", "Admin").
+        First(&user)
+    if result.Error != nil {
+        return nil, result.Error
+    }
+    return &user, nil
+}

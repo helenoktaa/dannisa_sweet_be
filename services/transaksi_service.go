@@ -12,12 +12,14 @@ import (
 type TransaksiService struct {
 	transaksiRepo *repositories.TransaksiRepository
 	produkRepo    *repositories.ProductRepository
+	userRepo      *repositories.UserRepository
 }
 
 func NewTransaksiService() *TransaksiService {
 	return &TransaksiService{
 		transaksiRepo: repositories.NewTransaksiRepository(),
 		produkRepo:    repositories.NewProductRepository(),
+		userRepo:      repositories.NewUserRepository(),
 	}
 }
 
@@ -121,32 +123,41 @@ func (s *TransaksiService) GetInvoice(id string) (*models.InvoiceResponse, error
 
     resp := s.buildResponse(transaksi)
 
-	// Hitung kembalian hanya kalau sudah bayar
-kembalian := 0.0
-if transaksi.JumlahBayar > 0 {
-    kembalian = transaksi.JumlahBayar - resp.TotalPenjualan
+    kembalian := 0.0
+    if transaksi.JumlahBayar > 0 {
+        kembalian = transaksi.JumlahBayar - resp.TotalPenjualan
+    }
+
+    // ── Ambil data owner/admin untuk info pembayaran ──────
+    // Cari user dengan jabatan Admin (JAB001)
+    owner, err := s.userRepo.FindAdminOwner()
+    if err != nil || owner == nil {
+        // Fallback ke user transaksi kalau admin tidak ditemukan
+        owner = &transaksi.User
+    }
+    // ─────────────────────────────────────────────────────
+
+    return &models.InvoiceResponse{
+        IDTransaksi:      transaksi.IDTransaksi,
+        TanggalTransaksi: transaksi.TanggalTransaksi,
+        NamaCustomer:     transaksi.NamaCustomer,
+        NamaKasir:        transaksi.User.NamaUser, // ← tetap kasir yang input
+        MetodePembayaran: transaksi.MetodePembayaran,
+        StatusPembayaran: transaksi.StatusPembayaran,
+        Detail:           resp.Detail,
+        TotalItem:        resp.TotalItem,
+        TotalPenjualan:   resp.TotalPenjualan,
+        JumlahBayar:      transaksi.JumlahBayar,
+        Kembalian:        kembalian,
+        InfoPembayaran: models.InfoPembayaran{
+            NamaRekening: owner.NamaUser,        // ← dari owner
+            NoRekening:   owner.RekPembayaran,   // ← dari owner
+            WhatsApp:     owner.Whatsapp,        // ← dari owner
+            Catatan:      "Mohon transfer sesuai nominal dan konfirmasi via WhatsApp",
+        },
+    }, nil
 }
 
-return &models.InvoiceResponse{
-    IDTransaksi:      transaksi.IDTransaksi,
-    TanggalTransaksi: transaksi.TanggalTransaksi,
-    NamaCustomer:     transaksi.NamaCustomer,
-    NamaKasir:        transaksi.User.NamaUser,
-    MetodePembayaran: transaksi.MetodePembayaran,
-    StatusPembayaran: transaksi.StatusPembayaran,
-    Detail:           resp.Detail,
-    TotalItem:        resp.TotalItem,
-    TotalPenjualan:   resp.TotalPenjualan,
-    JumlahBayar:      transaksi.JumlahBayar,
-    Kembalian:        kembalian, 
-    InfoPembayaran: models.InfoPembayaran{
-        NamaRekening: transaksi.User.NamaUser,
-        NoRekening:   transaksi.User.RekPembayaran,
-        WhatsApp:     transaksi.User.Whatsapp,
-        Catatan:      "Mohon transfer sesuai nominal dan konfirmasi via WhatsApp",
-    },
-}, nil
-}
 
 // GetLaporan laporan penjualan dengan kalkulasi modal dan laba
 func (s *TransaksiService) GetLaporan(req models.LaporanRequest) (*models.LaporanResponse, error) {
