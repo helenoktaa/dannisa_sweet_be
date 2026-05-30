@@ -10,9 +10,9 @@ type Produk struct {
 	HargaJual     float64    `gorm:"not null"                                  json:"harga_jual"`
 	Stok          int        `gorm:"not null;default:0"                        json:"stok"`
 	IDKategori    string     `gorm:"not null;index"                            json:"id_kategori"`
-	// ── Field baru ────────────────────────────────────────
 	StatusProduk  string     `gorm:"not null;size:20;default:'ready'"          json:"status_produk"` // ready / preorder
-	ExpiredDate   *time.Time `gorm:"default:null"                              json:"expired_date"`  // nullable
+	ExpiredDate   *time.Time `gorm:"default:null"                              json:"expired_date"`
+	ImageURL     *string    `gorm:"size:500;default:null"                      json:"image_url"`  // nullable
 
 	// Relasi
 	Kategori        Kategori          `gorm:"foreignKey:IDKategori;references:IDKategori" json:"kategori,omitempty"`
@@ -29,6 +29,7 @@ type CreateProdukRequest struct {
 	IDKategori   string  `json:"id_kategori"    binding:"required"`
 	StatusProduk string  `json:"status_produk"` // ready / preorder, default ready
 	ExpiredDate  string  `json:"expired_date"`  // format: 2026-12-31, opsional
+	ImageURL     string  `json:"image_url"`
 }
 
 type UpdateProdukRequest struct {
@@ -39,6 +40,7 @@ type UpdateProdukRequest struct {
 	IDKategori   string  `json:"id_kategori"`
 	StatusProduk string  `json:"status_produk"`
 	ExpiredDate  string  `json:"expired_date"` // format: 2026-12-31
+	ImageURL     string  `json:"image_url"`
 }
 
 type UpdateStokRequest struct {
@@ -54,6 +56,7 @@ type ProdukResponse struct {
 	Stok         int              `json:"stok"`
 	StatusProduk string           `json:"status_produk"`
 	ExpiredDate  *time.Time       `json:"expired_date"`
+	ImageURL     *string          `json:"image_url"` 
 	Kategori     KategoriResponse `json:"kategori"`
 }
 
