@@ -30,6 +30,7 @@ func SetupRouter() *gin.Engine {
 	jabatanHandler := handlers.NewJabatanHandler()
 	transaksiHandler := handlers.NewTransaksiHandler()
 	userHandler := handlers.NewUserHandler()
+	stokHistoryHandler := handlers.NewStokHistoryHandler()
 
 	// ─── API v1 group ─────────────────────────────────────────
 	v1 := r.Group("/v1")
@@ -129,6 +130,14 @@ func SetupRouter() *gin.Engine {
 				users.GET("/:id", userHandler.GetByID)   // GET    /v1/users/:id
 				users.PUT("/:id", userHandler.Update)    // PUT    /v1/users/:id
 				users.DELETE("/:id", userHandler.Delete) // DELETE /v1/users/:id
+			}
+
+			// ── Stok History (Admin only) ──────────────────────────────
+			stokHistory := protected.Group("/stok-history")
+			stokHistory.Use(middleware.AdminOnly())
+			{
+				stokHistory.POST("", stokHistoryHandler.Create) // catat perubahan stok
+				stokHistory.GET("", stokHistoryHandler.GetAll)  // lihat history
 			}
 		}
 	}

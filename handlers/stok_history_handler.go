@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"net/http"
-
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/helenoktaa/dannisa_sweet_be/models"
 	"github.com/helenoktaa/dannisa_sweet_be/services"
@@ -51,8 +51,8 @@ func (h *StokHistoryHandler) Create(c *gin.Context) {
 
 // GET /v1/stok-history — ambil semua history
 func (h *StokHistoryHandler) GetAll(c *gin.Context) {
-	idProduk := c.Query("id_produk") // opsional filter
-	jenis := c.Query("jenis")        // opsional filter
+	idProduk := c.Query("id_produk") 
+	jenis := c.Query("jenis")        
 
 	results, err := h.service.GetAll(idProduk, jenis)
 	if err != nil {
