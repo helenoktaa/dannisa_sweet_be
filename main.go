@@ -36,6 +36,7 @@ func main() {
 		&models.Produk{},
 		&models.Transaksi{},
 		&models.DetailTransaksi{},
+		&models.StokHistory{},
 	)
 	if err != nil {
 		log.Fatalf("AutoMigrate gagal: %v", err)

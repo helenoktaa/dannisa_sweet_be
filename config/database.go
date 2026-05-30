@@ -53,15 +53,15 @@ func InitDatabase() {
 	sqlDB.SetMaxOpenConns(25)
 	sqlDB.SetMaxIdleConns(10)
 
-	// AutoMigrate: urutan penting!
-	// Tabel yang tidak punya FK harus dibuat duluan
+	
 	err = DB.AutoMigrate(
-		&models.Jabatan{},         // 1. Jabatan dulu (tidak ada FK)
-		&models.User{},            // 2. User → FK ke Jabatan
-		&models.Kategori{},        // 3. Kategori (tidak ada FK)
-		&models.Produk{},          // 4. Produk → FK ke Kategori
-		&models.Transaksi{},       // 5. Transaksi → FK ke User
-		&models.DetailTransaksi{}, // 6. DetailTransaksi → FK ke Transaksi & Produk
+		&models.Jabatan{},         
+		&models.User{},            
+		&models.Kategori{},        
+		&models.Produk{},          
+		&models.Transaksi{},       
+		&models.DetailTransaksi{},
+		&models.StokHistory{},
 	)
 	if err != nil {
 		log.Fatalf("AutoMigrate gagal: %v", err)
