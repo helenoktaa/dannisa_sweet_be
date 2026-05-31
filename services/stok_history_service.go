@@ -12,12 +12,14 @@ import (
 type StokHistoryService struct {
 	historyRepo *repositories.StokHistoryRepository
 	produkRepo  *repositories.ProductRepository
+	userRepo    *repositories.UserRepository
 }
 
 func NewStokHistoryService() *StokHistoryService {
 	return &StokHistoryService{
 		historyRepo: repositories.NewStokHistoryRepository(),
 		produkRepo:  repositories.NewProductRepository(),
+		userRepo:    repositories.NewUserRepository(),
 	}
 }
 
@@ -72,11 +74,18 @@ func (s *StokHistoryService) Create(
 		return nil, errors.New("gagal update stok produk")
 	}
 
+	namaUser := ""
+user, err := s.userRepo.FindByID(idUser)
+if err == nil {
+	namaUser = user.NamaUser
+}
+
 	return &models.StokHistoryResponse{
 		IDHistory:   history.IDHistory,
 		IDProduk:    produk.IDProduk,
 		NamaProduk:  produk.NamaProduk,
 		IDUser:      idUser,
+		NamaUser:    namaUser,
 		Jenis:       req.Jenis,
 		Jumlah:      req.Jumlah,
 		StokSebelum: stokSebelum,
@@ -85,6 +94,7 @@ func (s *StokHistoryService) Create(
 		Tanggal:     history.Tanggal,
 	}, nil
 }
+
 
 // GetAll — ambil semua history
 func (s *StokHistoryService) GetAll(idProduk, jenis string) ([]models.StokHistoryResponse, error) {

@@ -31,6 +31,7 @@ func SetupRouter() *gin.Engine {
 	transaksiHandler := handlers.NewTransaksiHandler()
 	userHandler := handlers.NewUserHandler()
 	stokHistoryHandler := handlers.NewStokHistoryHandler()
+	dashboardHandler := handlers.NewDashboardHandler()
 
 	// ─── API v1 group ─────────────────────────────────────────
 	v1 := r.Group("/v1")
@@ -139,6 +140,9 @@ func SetupRouter() *gin.Engine {
 				stokHistory.POST("", stokHistoryHandler.Create) // catat perubahan stok
 				stokHistory.GET("", stokHistoryHandler.GetAll)  // lihat history
 			}
+
+			// ── Dashboard (Admin & Kasir) ─────────────────────
+			protected.GET("/dashboard", dashboardHandler.GetDashboard)
 		}
 	}
 
