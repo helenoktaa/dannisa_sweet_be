@@ -93,7 +93,7 @@ func (r *TransaksiRepository) Create(transaksi *models.Transaksi) error {
 }
 
 // UpdateStatus update status pembayaran dan jumlah bayar transaksi
-func (r *TransaksiRepository) UpdateStatus(id string, status string, jumlahBayar float64) error {
+func (r *TransaksiRepository) UpdateStatusPembayaran(id string, status string, jumlahBayar float64) error {
     updates := map[string]interface{}{
         "status_pembayaran": status,
     }
@@ -123,4 +123,37 @@ func (r *TransaksiRepository) GetLastNumber() (int, error) {
     var number int
     fmt.Sscanf(lastID, "TDS%d", &number)
     return number, nil
+}
+
+// UpdateStatusOrder - update jenis_order, status_order, catatan
+func (r *TransaksiRepository) UpdateStatusOrder(id, statusOrder, catatan string) error {
+    updates := map[string]interface{}{
+        "status_order": statusOrder,
+    }
+    if catatan != "" {
+        updates["catatan"] = catatan
+    }
+
+    result := config.DB.Model(&models.Transaksi{}).
+        Where("id_transaksi = ?", id).
+        Updates(updates)
+
+    return result.Error
+}
+
+// FindPreOrderAktif - semua pre order yang belum selesai/batal
+func (r *TransaksiRepository) FindPreOrderAktif() ([]models.Transaksi, error) {
+    var transaksis []models.Transaksi
+
+    err := config.DB.
+        Where("jenis_order = ? AND status_order NOT IN ?",
+            models.JenisPreOrder,
+            []string{models.StatusSelesai, models.StatusDibatalkan},
+        ).
+        Preload("User.Jabatan").
+        Preload("Detail.Produk.Kategori").
+        Order("tanggal_transaksi DESC").
+        Find(&transaksis).Error
+
+    return transaksis, err
 }

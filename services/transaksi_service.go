@@ -12,100 +12,100 @@ import (
 type TransaksiService struct {
 	transaksiRepo *repositories.TransaksiRepository
 	produkRepo    *repositories.ProductRepository
-	userRepo      *repositories.UserRepository
 }
 
 func NewTransaksiService() *TransaksiService {
 	return &TransaksiService{
 		transaksiRepo: repositories.NewTransaksiRepository(),
 		produkRepo:    repositories.NewProductRepository(),
-		userRepo:      repositories.NewUserRepository(),
 	}
 }
 
-// Create membuat transaksi baru beserta detail itemnya
+// ─────────────────────────────────────────────
+// Create
+// ─────────────────────────────────────────────
 func (s *TransaksiService) Create(req models.CreateTransaksiRequest) (*models.TransaksiResponse, error) {
-	// Generate ID otomatis format TDS0001
-    lastNumber, err := s.transaksiRepo.GetLastNumber()
-    if err != nil {
-        return nil, errors.New("gagal generate ID transaksi")
-    }
-    req.IDTransaksi = fmt.Sprintf("TDS%04d", lastNumber+1)
-	
-	// 1. Validasi setiap produk — cek stok cukup
+	lastNumber, err := s.transaksiRepo.GetLastNumber()
+	if err != nil {
+		return nil, errors.New("gagal generate ID transaksi")
+	}
+	req.IDTransaksi = fmt.Sprintf("TDS%04d", lastNumber+1)
+
+	jenisOrder := models.JenisReadyStock
+	statusOrder := models.StatusSelesai
+
 	for _, item := range req.Detail {
 		produk, err := s.produkRepo.FindByID(item.IDProduk)
 		if err != nil {
 			return nil, fmt.Errorf("produk %s tidak ditemukan", item.IDProduk)
 		}
-		if produk.Stok < item.Qty {
-			return nil, fmt.Errorf("stok produk %s tidak cukup (stok: %d, diminta: %d)",
-				produk.NamaProduk, produk.Stok, item.Qty)
+
+		if produk.StatusProduk == "pre_order" {
+			jenisOrder = models.JenisPreOrder
+			statusOrder = models.StatusMenungguDiproses
+		} else {
+			if produk.Stok < item.Qty {
+				return nil, fmt.Errorf("stok produk %s tidak cukup (stok: %d, diminta: %d)",
+					produk.NamaProduk, produk.Stok, item.Qty)
+			}
 		}
 	}
 
-	// 2. Build detail transaksi
 	var details []models.DetailTransaksi
-	var totalPenjualan float64
-
 	for _, item := range req.Detail {
 		produk, _ := s.produkRepo.FindByID(item.IDProduk)
-
-		detail := models.DetailTransaksi{
+		details = append(details, models.DetailTransaksi{
 			IDTransaksi: req.IDTransaksi,
 			IDProduk:    item.IDProduk,
 			Qty:         item.Qty,
-			HargaJual:   produk.HargaJual, // snapshot harga saat transaksi
-		}
-		details = append(details, detail)
-		totalPenjualan += produk.HargaJual * float64(item.Qty)
+			HargaJual:   produk.HargaJual,
+		})
 	}
 
-	// 3. Build transaksi
 	transaksi := &models.Transaksi{
 		IDTransaksi:      req.IDTransaksi,
 		TanggalTransaksi: time.Now(),
 		NamaCustomer:     req.NamaCustomer,
 		JumlahBayar:      req.JumlahBayar,
 		MetodePembayaran: req.MetodePembayaran,
-		StatusPembayaran: "Pending", // confirm by admin/kasir
+		StatusPembayaran: "Pending",
 		IDUser:           req.IDUser,
+		JenisOrder:       jenisOrder,
+		StatusOrder:      statusOrder,
+		Catatan:          req.Catatan,
 		Detail:           details,
 	}
 
-	// 4. Simpan ke DB (repository handle update stok otomatis)
 	if err := s.transaksiRepo.Create(transaksi); err != nil {
 		return nil, errors.New("gagal menyimpan transaksi")
 	}
 
-	// 5. Ambil data lengkap dengan relasi
 	saved, err := s.transaksiRepo.FindByID(transaksi.IDTransaksi)
 	if err != nil {
 		return nil, err
 	}
-
 	return s.buildResponse(saved), nil
 }
 
-// GetAll mengambil semua transaksi dengan filter tanggal opsional
-func (s *TransaksiService) GetAll(tanggalMulai, tanggalAkhir, status string) (*models.TransaksiListResponse, error) {
-    transaksis, err := s.transaksiRepo.FindAll(tanggalMulai, tanggalAkhir, status)
-    if err != nil {
-        return nil, err
-    }
+// ─────────────────────────────────────────────
+// GetAll
+// ─────────────────────────────────────────────
+func (s *TransaksiService) GetAll(tanggalMulai, tanggalAkhir, status string) ([]models.TransaksiResponse, error) {
+	transaksis, err := s.transaksiRepo.FindAll(tanggalMulai, tanggalAkhir, status)
+	if err != nil {
+		return nil, err
+	}
 
-    var responses []models.TransaksiResponse
-    for _, t := range transaksis {
-        responses = append(responses, *s.buildResponse(&t))
-    }
-
-    return &models.TransaksiListResponse{
-        Data:  responses,
-        Total: int64(len(responses)),
-    }, nil
+	var result []models.TransaksiResponse
+	for _, t := range transaksis {
+		result = append(result, *s.buildResponse(&t))
+	}
+	return result, nil
 }
 
-// GetByID mengambil satu transaksi
+// ─────────────────────────────────────────────
+// GetByID
+// ─────────────────────────────────────────────
 func (s *TransaksiService) GetByID(id string) (*models.TransaksiResponse, error) {
 	transaksi, err := s.transaksiRepo.FindByID(id)
 	if err != nil {
@@ -114,99 +114,151 @@ func (s *TransaksiService) GetByID(id string) (*models.TransaksiResponse, error)
 	return s.buildResponse(transaksi), nil
 }
 
-// GetInvoice generate data invoice dari transaksi
+// ─────────────────────────────────────────────
+// GetInvoice
+// ─────────────────────────────────────────────
 func (s *TransaksiService) GetInvoice(id string) (*models.InvoiceResponse, error) {
-    transaksi, err := s.transaksiRepo.FindByID(id)
-    if err != nil {
-        return nil, errors.New("transaksi tidak ditemukan")
-    }
+	transaksi, err := s.transaksiRepo.FindByID(id)
+	if err != nil {
+		return nil, errors.New("transaksi tidak ditemukan")
+	}
 
-    resp := s.buildResponse(transaksi)
+	resp := s.buildResponse(transaksi)
 
-    kembalian := 0.0
-    if transaksi.JumlahBayar > 0 {
-        kembalian = transaksi.JumlahBayar - resp.TotalPenjualan
-    }
-
-    // ── Ambil data owner/admin untuk info pembayaran ──────
-    // Cari user dengan jabatan Admin (JAB001)
-    owner, err := s.userRepo.FindAdminOwner()
-    if err != nil || owner == nil {
-        // Fallback ke user transaksi kalau admin tidak ditemukan
-        owner = &transaksi.User
-    }
-    // ─────────────────────────────────────────────────────
-
-    return &models.InvoiceResponse{
-        IDTransaksi:      transaksi.IDTransaksi,
-        TanggalTransaksi: transaksi.TanggalTransaksi,
-        NamaCustomer:     transaksi.NamaCustomer,
-        NamaKasir:        transaksi.User.NamaUser, // ← tetap kasir yang input
-        MetodePembayaran: transaksi.MetodePembayaran,
-        StatusPembayaran: transaksi.StatusPembayaran,
-        Detail:           resp.Detail,
-        TotalItem:        resp.TotalItem,
-        TotalPenjualan:   resp.TotalPenjualan,
-        JumlahBayar:      transaksi.JumlahBayar,
-        Kembalian:        kembalian,
-        InfoPembayaran: models.InfoPembayaran{
-            NamaRekening: owner.NamaUser,        // ← dari owner
-            NoRekening:   owner.RekPembayaran,   // ← dari owner
-            WhatsApp:     owner.Whatsapp,        // ← dari owner
-            Catatan:      "Mohon transfer sesuai nominal dan konfirmasi via WhatsApp",
-        },
-    }, nil
+	return &models.InvoiceResponse{
+		IDTransaksi:      transaksi.IDTransaksi,
+		TanggalTransaksi: transaksi.TanggalTransaksi,
+		NamaCustomer:     transaksi.NamaCustomer,
+		NamaKasir:        transaksi.User.NamaUser,
+		MetodePembayaran: transaksi.MetodePembayaran,
+		StatusPembayaran: transaksi.StatusPembayaran,
+		Detail:           resp.Detail,
+		TotalItem:        resp.TotalItem,
+		TotalPenjualan:   resp.TotalPenjualan,
+		JumlahBayar:      transaksi.JumlahBayar,
+		Kembalian:        transaksi.JumlahBayar - resp.TotalPenjualan,
+		InfoPembayaran: models.InfoPembayaran{
+			NamaRekening: "Anisa Dian Utami",
+			NoRekening:   "BCA 8880587898",
+			WhatsApp:     "085156194878",
+			Catatan:      "Mohon transfer sesuai nominal dan konfirmasi via WA",
+		},
+	}, nil
 }
 
-
-// GetLaporan laporan penjualan dengan kalkulasi modal dan laba
+// ─────────────────────────────────────────────
+// GetLaporan
+// ─────────────────────────────────────────────
 func (s *TransaksiService) GetLaporan(req models.LaporanRequest) (*models.LaporanResponse, error) {
 	transaksis, err := s.transaksiRepo.FindAll(req.TanggalMulai, req.TanggalAkhir, "")
 	if err != nil {
 		return nil, err
 	}
 
-	var responses []models.TransaksiResponse
-	var totalPenjualan, totalModal float64
+	var totalModal, totalPenjualan, totalLaba float64
+	var totalTransaksi int64
+	var transaksiResponses []models.TransaksiResponse
 
 	for _, t := range transaksis {
+		if t.StatusPembayaran != "Lunas" {
+			continue
+		}
+		totalTransaksi++
 		resp := s.buildResponse(&t)
-		responses = append(responses, *resp)
-		totalPenjualan += resp.TotalPenjualan
-
-		// Hitung modal dari harga_modal produk
 		for _, d := range t.Detail {
 			totalModal += d.Produk.HargaModal * float64(d.Qty)
+			totalPenjualan += d.HargaJual * float64(d.Qty)
 		}
+		transaksiResponses = append(transaksiResponses, *resp)
 	}
+	totalLaba = totalPenjualan - totalModal
 
 	return &models.LaporanResponse{
 		TanggalMulai:   req.TanggalMulai,
 		TanggalAkhir:   req.TanggalAkhir,
-		TotalTransaksi: int64(len(transaksis)),
-		TotalPenjualan: totalPenjualan,
+		TotalTransaksi: totalTransaksi,
 		TotalModal:     totalModal,
-		TotalLaba:      totalPenjualan - totalModal,
-		Transaksis:     responses,
+		TotalPenjualan: totalPenjualan,
+		TotalLaba:      totalLaba,
+		Transaksis:     transaksiResponses,
 	}, nil
 }
 
-// UpdateStatus update status pembayaran
+// ─────────────────────────────────────────────
+// UpdateStatus (status pembayaran)
+// Stok sudah dikurangi saat Create, tidak dikurangi lagi di sini
+// ─────────────────────────────────────────────
 func (s *TransaksiService) UpdateStatus(id string, req models.UpdateStatusPembayaranRequest) (*models.TransaksiResponse, error) {
-    if _, err := s.transaksiRepo.FindByID(id); err != nil {
-        return nil, errors.New("transaksi tidak ditemukan")
-    }
+	transaksi, err := s.transaksiRepo.FindByID(id)
+	if err != nil {
+		return nil, errors.New("transaksi tidak ditemukan")
+	}
 
-    // Tambah req.JumlahBayar sebagai parameter
-    if err := s.transaksiRepo.UpdateStatus(id, req.StatusPembayaran, req.JumlahBayar); err != nil {
-        return nil, errors.New("gagal update status")
-    }
+	if transaksi.StatusPembayaran == "Lunas" {
+		return nil, errors.New("transaksi sudah lunas")
+	}
 
-    updated, _ := s.transaksiRepo.FindByID(id)
-    return s.buildResponse(updated), nil
+	if err := s.transaksiRepo.UpdateStatusPembayaran(id, req.StatusPembayaran, req.JumlahBayar); err != nil {
+		return nil, errors.New("gagal mengupdate status pembayaran")
+	}
+
+	return s.GetByID(id)
 }
 
-// buildResponse helper — konversi Transaksi model ke TransaksiResponse
+// ─────────────────────────────────────────────
+// UpdateStatusOrder (khusus pre order)
+// ─────────────────────────────────────────────
+func (s *TransaksiService) UpdateStatusOrder(id string, req models.UpdateStatusOrderRequest) (*models.TransaksiResponse, error) {
+	transaksi, err := s.transaksiRepo.FindByID(id)
+	if err != nil {
+		return nil, errors.New("transaksi tidak ditemukan")
+	}
+
+	if transaksi.JenisOrder != models.JenisPreOrder {
+		return nil, errors.New("hanya transaksi pre order yang bisa diupdate status order-nya")
+	}
+
+	urutanValid := map[string]string{
+		models.StatusMenungguDiproses: models.StatusSedangDibuat,
+		models.StatusSedangDibuat:     models.StatusSedangDiantar,
+		models.StatusSedangDiantar:    models.StatusPesananDiterima,
+		models.StatusPesananDiterima:  models.StatusSelesai,
+	}
+
+	if req.StatusOrder != models.StatusDibatalkan {
+		nextValid, ok := urutanValid[transaksi.StatusOrder]
+		if !ok || req.StatusOrder != nextValid {
+			return nil, fmt.Errorf("status tidak valid: dari '%s' hanya bisa ke '%s'",
+				transaksi.StatusOrder, urutanValid[transaksi.StatusOrder])
+		}
+	}
+
+	if err := s.transaksiRepo.UpdateStatusOrder(id, req.StatusOrder, req.Catatan); err != nil {
+		return nil, errors.New("gagal mengupdate status order")
+	}
+
+	return s.GetByID(id)
+}
+
+// ─────────────────────────────────────────────
+// GetPreOrderAktif
+// ─────────────────────────────────────────────
+func (s *TransaksiService) GetPreOrderAktif() ([]models.TransaksiResponse, error) {
+	transaksis, err := s.transaksiRepo.FindPreOrderAktif()
+	if err != nil {
+		return nil, err
+	}
+
+	var result []models.TransaksiResponse
+	for _, t := range transaksis {
+		result = append(result, *s.buildResponse(&t))
+	}
+	return result, nil
+}
+
+// ─────────────────────────────────────────────
+// buildResponse (internal helper)
+// ─────────────────────────────────────────────
 func (s *TransaksiService) buildResponse(t *models.Transaksi) *models.TransaksiResponse {
 	var details []models.DetailTransaksiResponse
 	var totalItem int
@@ -244,6 +296,9 @@ func (s *TransaksiService) buildResponse(t *models.Transaksi) *models.TransaksiR
 		JumlahBayar:      t.JumlahBayar,
 		MetodePembayaran: t.MetodePembayaran,
 		StatusPembayaran: t.StatusPembayaran,
+		JenisOrder:       t.JenisOrder,
+		StatusOrder:      t.StatusOrder,
+		Catatan:          t.Catatan,
 		User: models.UserResponse{
 			IDUser:   t.User.IDUser,
 			NamaUser: t.User.NamaUser,

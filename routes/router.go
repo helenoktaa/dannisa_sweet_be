@@ -117,11 +117,16 @@ func SetupRouter() *gin.Engine {
 				// Admin only
 				adminTrx := transaksi.Group("")
 				adminTrx.Use(middleware.AdminOnly())
+				
 				{
 					adminTrx.GET("/laporan", transaksiHandler.GetLaporan)
 					adminTrx.PUT("/:id/status", transaksiHandler.UpdateStatus)
+					
 				}
+				
 			}
+
+			
 
 			// ── User Management (Admin only) ──────────────────
 			users := protected.Group("/users")

@@ -4,15 +4,15 @@ import "time"
 
 // Produk menyimpan data produk dessert dan kue Dannisa Sweet
 type Produk struct {
-	IDProduk      string     `gorm:"primaryKey;size:20"                        json:"id_produk"`
-	NamaProduk    string     `gorm:"not null;size:100"                         json:"nama_produk"`
-	HargaModal    float64    `gorm:"not null"                                  json:"harga_modal"`
-	HargaJual     float64    `gorm:"not null"                                  json:"harga_jual"`
-	Stok          int        `gorm:"not null;default:0"                        json:"stok"`
-	IDKategori    string     `gorm:"not null;index"                            json:"id_kategori"`
-	StatusProduk  string     `gorm:"not null;size:20;default:'ready'"          json:"status_produk"` // ready / preorder
-	ExpiredDate   *time.Time `gorm:"default:null"                              json:"expired_date"`
-	ImageURL     *string    `gorm:"size:500;default:null"                      json:"image_url"`  // nullable
+	IDProduk     string     `gorm:"primaryKey;size:20"                        json:"id_produk"`
+	NamaProduk   string     `gorm:"not null;size:100"                         json:"nama_produk"`
+	HargaModal   float64    `gorm:"not null"                                  json:"harga_modal"`
+	HargaJual    float64    `gorm:"not null"                                  json:"harga_jual"`
+	Stok         int        `gorm:"not null;default:0"                        json:"stok"`
+	IDKategori   string     `gorm:"not null;index"                            json:"id_kategori"`
+	StatusProduk string     `gorm:"not null;size:20;default:'ready'"          json:"status_produk"` // ready / preorder
+	ExpiredDate  *time.Time `gorm:"default:null"                              json:"expired_date"`
+	ImageURL     *string    `gorm:"size:500;default:null"                      json:"image_url"` // nullable
 
 	// Relasi
 	Kategori        Kategori          `gorm:"foreignKey:IDKategori;references:IDKategori" json:"kategori,omitempty"`
@@ -25,7 +25,7 @@ type CreateProdukRequest struct {
 	NamaProduk   string  `json:"nama_produk"    binding:"required"`
 	HargaModal   float64 `json:"harga_modal"    binding:"required,min=0"`
 	HargaJual    float64 `json:"harga_jual"     binding:"required,min=0"`
-	Stok         int     `json:"stok"           binding:"required,min=0"`
+	Stok         int     `json:"stok"           binding:"omitempty,min=0"`
 	IDKategori   string  `json:"id_kategori"    binding:"required"`
 	StatusProduk string  `json:"status_produk"` // ready / preorder, default ready
 	ExpiredDate  string  `json:"expired_date"`  // format: 2026-12-31, opsional
@@ -56,7 +56,7 @@ type ProdukResponse struct {
 	Stok         int              `json:"stok"`
 	StatusProduk string           `json:"status_produk"`
 	ExpiredDate  *time.Time       `json:"expired_date"`
-	ImageURL     *string          `json:"image_url"` 
+	ImageURL     *string          `json:"image_url"`
 	Kategori     KategoriResponse `json:"kategori"`
 }
 

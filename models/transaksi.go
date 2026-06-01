@@ -2,6 +2,18 @@ package models
 
 import "time"
 
+const (
+	JenisReadyStock = "ready_stock"
+	JenisPreOrder   = "pre_order"
+
+	StatusMenungguDiproses = "menunggu_diproses"
+	StatusSedangDibuat     = "sedang_dibuat"
+	StatusSedangDiantar    = "sedang_diantar"
+	StatusPesananDiterima  = "pesanan_diterima"
+	StatusSelesai          = "selesai"
+	StatusDibatalkan       = "dibatalkan"
+)
+
 // Transaksi menyimpan data transaksi penjualan Dannisa Sweet
 type Transaksi struct {
 	IDTransaksi      string    `gorm:"primaryKey;size:30"                        json:"id_transaksi"`
@@ -11,6 +23,9 @@ type Transaksi struct {
 	MetodePembayaran string    `gorm:"not null;size:30"                          json:"metode_pembayaran"` // Tunai / Transfer / QRIS
 	StatusPembayaran string    `gorm:"not null;size:20;default:'Pending'"        json:"status_pembayaran"` // Pending / Lunas
 	IDUser           string    `gorm:"not null;size:20;index"                    json:"id_user"`
+	JenisOrder       string    `gorm:"not null;size:20;default:'ready_stock'"   json:"jenis_order"`
+	StatusOrder      string    `gorm:"not null;size:30;default:'selesai'"        json:"status_order"`
+	Catatan          string    `gorm:"size:500"                                  json:"catatan"`
 
 	// Relasi
 	User   User              `gorm:"foreignKey:IDUser;references:IDUser"    json:"user,omitempty"`
@@ -27,12 +42,20 @@ type CreateTransaksiRequest struct {
 	JumlahBayar float64                        `json:"jumlah_bayar"`
 	IDUser      string                         `json:"id_user"`
 	Detail      []CreateDetailTransaksiRequest `json:"detail"            binding:"required,min=1,dive"`
+	JenisOrder  string                         `json:"jenis_order" binding:"omitempty,oneof=ready_stock pre_order"`
+	Catatan     string                         `json:"catatan"`
 }
 
 // DTO - Update Status Pembayaran
 type UpdateStatusPembayaranRequest struct {
 	StatusPembayaran string  `json:"status_pembayaran" binding:"required,oneof=Pending Lunas"`
 	JumlahBayar      float64 `json:"jumlah_bayar"      binding:"omitempty,min=0"`
+}
+
+// DTO - Update Status Order (khusus pre order)
+type UpdateStatusOrderRequest struct {
+	StatusOrder string `json:"status_order" binding:"required,oneof=sedang_dibuat sedang_diantar pesanan_diterima selesai dibatalkan"`
+	Catatan     string `json:"catatan"`
 }
 
 // Response - satu transaksi
@@ -45,10 +68,13 @@ type TransaksiResponse struct {
 	JumlahBayar      float64                   `json:"jumlah_bayar"`
 	MetodePembayaran string                    `json:"metode_pembayaran"`
 	StatusPembayaran string                    `json:"status_pembayaran"`
+	JenisOrder       string                    `json:"jenis_order"`
+	StatusOrder      string                    `json:"status_order"`
+	Catatan          string                    `json:"catatan"`
 	User             UserResponse              `json:"user"`
 	Detail           []DetailTransaksiResponse `json:"detail"`
 
-	// Kalkulasi — dihitung di backend, BUKAN kolom di DB
+	
 	TotalItem      int     `json:"total_item"`
 	TotalPenjualan float64 `json:"total_penjualan"` // SUM(qty * harga_jual)
 }

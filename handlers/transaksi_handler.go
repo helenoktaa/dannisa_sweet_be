@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-
 	"github.com/gin-gonic/gin"
 	"github.com/helenoktaa/dannisa_sweet_be/models"
 	"github.com/helenoktaa/dannisa_sweet_be/services"
@@ -180,4 +179,52 @@ func (h *TransaksiHandler) UpdateStatus(c *gin.Context) {
 		"message": "Status pembayaran berhasil diperbarui",
 		"data":    transaksi,
 	})
+}
+
+// UpdateStatusOrder - PATCH /v1/transaksi/:id/status-order (Admin only)
+// Update status proses pesanan pre order: menunggu -> dibuat -> diantar -> diterima -> selesai
+func (h *TransaksiHandler) UpdateStatusOrder(c *gin.Context) {
+    id := c.Param("id")
+
+    var req models.UpdateStatusOrderRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{
+            "success": false,
+            "message": err.Error(),
+        })
+        return
+    }
+
+    transaksi, err := h.transaksiService.UpdateStatusOrder(id, req)
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{
+            "success": false,
+            "message": err.Error(),
+        })
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "message": "Status order berhasil diperbarui",
+        "data":    transaksi,
+    })
+}
+
+// GetPreOrderAktif - GET /v1/transaksi/pre-order/aktif (Admin only)
+// Ambil semua transaksi pre order yang belum selesai/batal
+func (h *TransaksiHandler) GetPreOrderAktif(c *gin.Context) {
+    transaksis, err := h.transaksiService.GetPreOrderAktif()
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{
+            "success": false,
+            "message": "Gagal mengambil data pre order",
+        })
+        return
+    }
+
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "data":    transaksis,
+    })
 }
