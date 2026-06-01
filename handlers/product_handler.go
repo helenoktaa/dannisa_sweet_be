@@ -20,19 +20,38 @@ func NewProductHandler() *ProductHandler {
 
 // GetAll - GET /products
 func (h *ProductHandler) GetAll(c *gin.Context) {
-	products, err := h.productService.GetAll()
+
+	statusProduk := c.Query(
+		"status_produk",
+	)
+
+	products, err :=
+		h.productService.GetAll(
+			statusProduk,
+		)
+
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": "Gagal mengambil data produk",
-		})
+
+		c.JSON(
+			http.StatusInternalServerError,
+
+			gin.H{
+				"success": false,
+				"message": "Gagal mengambil data produk",
+			},
+		)
+
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"data":    products,
-	})
+	c.JSON(
+		http.StatusOK,
+
+		gin.H{
+			"success": true,
+			"data":    products,
+		},
+	)
 }
 
 // GetByID - GET /products/:id

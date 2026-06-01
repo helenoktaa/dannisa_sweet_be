@@ -17,10 +17,45 @@ func NewProductService() *ProductService {
 	}
 }
 
-func (s *ProductService) GetAll() ([]models.Produk, error) {
-	return s.productRepo.FindAll()
-}
+func (s *ProductService) GetAll(
+	statusProduk string,
+) ([]models.ProdukResponse, error) {
 
+	products, err := s.productRepo.FindAll(
+		statusProduk,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var responses []models.ProdukResponse
+
+	for _, p := range products {
+
+		responses = append(
+			responses,
+
+			models.ProdukResponse{
+				IDProduk:     p.IDProduk,
+				NamaProduk:   p.NamaProduk,
+				HargaModal:   p.HargaModal,
+				HargaJual:    p.HargaJual,
+				Stok:         p.Stok,
+				StatusProduk: p.StatusProduk,
+				ExpiredDate:  p.ExpiredDate,
+				ImageURL:     p.ImageURL,
+
+				Kategori: models.KategoriResponse{
+					IDKategori:   p.Kategori.IDKategori,
+					NamaKategori: p.Kategori.NamaKategori,
+				},
+			},
+		)
+	}
+
+	return responses, nil
+}
 func (s *ProductService) GetByID(id string) (*models.Produk, error) {
 	return s.productRepo.FindByID(id)
 }

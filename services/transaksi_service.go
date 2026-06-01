@@ -40,7 +40,7 @@ func (s *TransaksiService) Create(req models.CreateTransaksiRequest) (*models.Tr
 			return nil, fmt.Errorf("produk %s tidak ditemukan", item.IDProduk)
 		}
 
-		if produk.StatusProduk == "pre_order" {
+		if produk.StatusProduk == "preorder" {
 			jenisOrder = models.JenisPreOrder
 			statusOrder = models.StatusMenungguDiproses
 		} else {

@@ -12,14 +12,29 @@ func NewProductRepository() *ProductRepository {
 }
 
 // FindAll mengambil semua produk
-func (r *ProductRepository) FindAll() ([]models.Produk, error) {
+func (r *ProductRepository) FindAll(
+	statusProduk string,
+) ([]models.Produk, error) {
+
 	var products []models.Produk
 
-	result := config.DB.
-		Preload("Kategori").
-		Find(&products)
+	query := config.DB.
+		Preload("Kategori")
 
-	return products, result.Error
+	if statusProduk != "" {
+
+		query = query.Where(
+			"status_produk = ?",
+			statusProduk,
+		)
+	}
+
+	result := query.Find(
+		&products,
+	)
+
+	return products,
+		result.Error
 }
 
 // FindByID mengambil produk berdasarkan ID
