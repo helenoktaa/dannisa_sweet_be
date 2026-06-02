@@ -12,6 +12,7 @@ type StokHistory struct {
 	StokSebelum int       `gorm:"not null"                              json:"stok_sebelum"`
 	StokSesudah int       `gorm:"not null"                              json:"stok_sesudah"`
 	Keterangan  string    `gorm:"size:255"                              json:"keterangan"`  // rusak / expired / restock / dll
+	NilaiRugi   float64   `gorm:"not null;default:0"                 json:"nilai_rugi"`
 	Tanggal     time.Time `gorm:"not null;default:CURRENT_TIMESTAMP"    json:"tanggal"`
 
 	// Relasi
@@ -39,5 +40,6 @@ type StokHistoryResponse struct {
 	StokSebelum int       `json:"stok_sebelum"`
 	StokSesudah int       `json:"stok_sesudah"`
 	Keterangan  string    `json:"keterangan"`
+	NilaiRugi   float64   `json:"nilai_rugi"`
 	Tanggal     time.Time `json:"tanggal"`
 }

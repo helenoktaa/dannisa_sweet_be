@@ -52,6 +52,12 @@ func (s *StokHistoryService) Create(
 	lastNumber, _ := s.historyRepo.GetLastNumber()
 	idHistory := fmt.Sprintf("STK%04d", lastNumber+1)
 
+	// Hitung nilai rugi — hanya jika pengurangan
+nilaiRugi := 0.0
+if req.Jenis == "pengurangan" {
+    nilaiRugi = float64(req.Jumlah) * produk.HargaModal
+}
+
 	history := &models.StokHistory{
 		IDHistory:   idHistory,
 		IDProduk:    req.IDProduk,
@@ -61,6 +67,7 @@ func (s *StokHistoryService) Create(
 		StokSebelum: stokSebelum,
 		StokSesudah: stokSesudah,
 		Keterangan:  req.Keterangan,
+		NilaiRugi:   nilaiRugi,
 		Tanggal:     time.Now(),
 	}
 
@@ -91,6 +98,7 @@ if err == nil {
 		StokSebelum: stokSebelum,
 		StokSesudah: stokSesudah,
 		Keterangan:  req.Keterangan,
+		NilaiRugi:   nilaiRugi,
 		Tanggal:     history.Tanggal,
 	}, nil
 }
@@ -116,6 +124,7 @@ func (s *StokHistoryService) GetAll(idProduk, jenis string) ([]models.StokHistor
 			StokSebelum: h.StokSebelum,
 			StokSesudah: h.StokSesudah,
 			Keterangan:  h.Keterangan,
+			NilaiRugi:   h.NilaiRugi,
 			Tanggal:     h.Tanggal,
 		})
 	}
