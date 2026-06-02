@@ -12,7 +12,6 @@ func NewStokHistoryRepository() *StokHistoryRepository {
 	return &StokHistoryRepository{}
 }
 
-// Generate ID otomatis — format STK0001
 func (r *StokHistoryRepository) GetLastNumber() (int, error) {
 	var lastID string
 	result := config.DB.Model(&models.StokHistory{}).
@@ -28,13 +27,12 @@ func (r *StokHistoryRepository) GetLastNumber() (int, error) {
 	return number, nil
 }
 
-// Create stok history
 func (r *StokHistoryRepository) Create(history *models.StokHistory) error {
 	return config.DB.Create(history).Error
 }
 
-// FindAll — bisa filter by produk atau by jenis
-func (r *StokHistoryRepository) FindAll(idProduk, jenis string) ([]models.StokHistory, error) {
+// FindAll — filter by produk, jenis, dan tanggal
+func (r *StokHistoryRepository) FindAll(idProduk, jenis, tanggalMulai, tanggalAkhir string) ([]models.StokHistory, error) {
 	var histories []models.StokHistory
 	query := config.DB.
 		Preload("Produk").
@@ -47,12 +45,17 @@ func (r *StokHistoryRepository) FindAll(idProduk, jenis string) ([]models.StokHi
 	if jenis != "" {
 		query = query.Where("jenis = ?", jenis)
 	}
+	if tanggalMulai != "" {
+		query = query.Where("DATE(tanggal) >= ?", tanggalMulai)
+	}
+	if tanggalAkhir != "" {
+		query = query.Where("DATE(tanggal) <= ?", tanggalAkhir)
+	}
 
 	result := query.Order("tanggal DESC").Find(&histories)
 	return histories, result.Error
 }
 
-// FindByProduk — history stok per produk
 func (r *StokHistoryRepository) FindByProduk(idProduk string) ([]models.StokHistory, error) {
-	return r.FindAll(idProduk, "")
+	return r.FindAll(idProduk, "", "", "")
 }

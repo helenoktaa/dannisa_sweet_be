@@ -105,8 +105,8 @@ if err == nil {
 
 
 // GetAll — ambil semua history
-func (s *StokHistoryService) GetAll(idProduk, jenis string) ([]models.StokHistoryResponse, error) {
-	histories, err := s.historyRepo.FindAll(idProduk, jenis)
+func (s *StokHistoryService) GetAll(idProduk, jenis, tanggalMulai, tanggalAkhir string,) ([]models.StokHistoryResponse, error) {
+	histories, err := s.historyRepo.FindAll(idProduk, jenis, tanggalMulai, tanggalAkhir)
 	if err != nil {
 		return nil, err
 	}
@@ -131,3 +131,4 @@ func (s *StokHistoryService) GetAll(idProduk, jenis string) ([]models.StokHistor
 
 	return responses, nil
 }
+

@@ -53,8 +53,10 @@ func (h *StokHistoryHandler) Create(c *gin.Context) {
 func (h *StokHistoryHandler) GetAll(c *gin.Context) {
 	idProduk := c.Query("id_produk") 
 	jenis := c.Query("jenis")        
+	tanggalMulai := c.Query("tanggal_mulai")
+	tanggalAkhir := c.Query("tanggal_akhir") 
 
-	results, err := h.service.GetAll(idProduk, jenis)
+	results, err := h.service.GetAll(idProduk, jenis, tanggalMulai, tanggalAkhir)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
