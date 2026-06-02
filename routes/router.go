@@ -111,22 +111,22 @@ func SetupRouter() *gin.Engine {
 				// Admin & Kasir boleh akses
 				transaksi.POST("", transaksiHandler.Create)
 				transaksi.GET("", transaksiHandler.GetAll)
+				transaksi.GET("/pre-order/aktif", transaksiHandler.GetPreOrderAktif)
+				transaksi.PATCH("/:id/status-order", transaksiHandler.UpdateStatusOrder)
 				transaksi.GET("/:id", transaksiHandler.GetByID)
 				transaksi.GET("/:id/invoice", transaksiHandler.GetInvoice)
 
 				// Admin only
 				adminTrx := transaksi.Group("")
 				adminTrx.Use(middleware.AdminOnly())
-				
+
 				{
 					adminTrx.GET("/laporan", transaksiHandler.GetLaporan)
 					adminTrx.PUT("/:id/status", transaksiHandler.UpdateStatus)
-					
-				}
-				
-			}
 
-			
+				}
+
+			}
 
 			// ── User Management (Admin only) ──────────────────
 			users := protected.Group("/users")

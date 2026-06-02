@@ -44,11 +44,12 @@ func (s *TransaksiService) Create(req models.CreateTransaksiRequest) (*models.Tr
 			jenisOrder = models.JenisPreOrder
 			statusOrder = models.StatusMenungguDiproses
 		} else {
-			if produk.Stok < item.Qty {
-				return nil, fmt.Errorf("stok produk %s tidak cukup (stok: %d, diminta: %d)",
-					produk.NamaProduk, produk.Stok, item.Qty)
-			}
-		}
+    // Hanya cek stok untuk produk ready stock
+    if produk.StatusProduk != "preorder" && produk.Stok < item.Qty {
+        return nil, fmt.Errorf("stok produk %s tidak cukup (stok: %d, diminta: %d)",
+            produk.NamaProduk, produk.Stok, item.Qty)
+    }
+}
 	}
 
 	var details []models.DetailTransaksi
