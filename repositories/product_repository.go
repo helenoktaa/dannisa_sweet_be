@@ -19,7 +19,8 @@ func (r *ProductRepository) FindAll(
 	var products []models.Produk
 
 	query := config.DB.
-		Preload("Kategori")
+		Preload("Kategori").
+		Preload("MarkdownPricing")
 
 	if statusProduk != "" {
 
@@ -43,6 +44,7 @@ func (r *ProductRepository) FindByID(id string) (*models.Produk, error) {
 
 	result := config.DB.
 		Preload("Kategori").
+		Preload("MarkdownPricing").
 		Where("id_produk = ?", id).
 		First(&product)
 
@@ -72,4 +74,17 @@ func (r *ProductRepository) UpdateStock(id string, stock int) error {
 		Model(&models.Produk{}).
 		Where("id_produk = ?", id).
 		Update("stok", stock).Error
+}
+
+// FindNearExpired mengambil produk yang expired dalam N hari ke depan
+func (r *ProductRepository) FindNearExpired(hariThreshold int) ([]models.Produk, error) {
+    var products []models.Produk
+
+    result := config.DB.
+        Preload("Kategori").
+        Preload("MarkdownPricing").
+        Where("expired_date IS NOT NULL AND expired_date <= NOW() + INTERVAL ? DAY AND expired_date >= NOW()", hariThreshold).
+        Find(&products)
+
+    return products, result.Error
 }

@@ -62,6 +62,7 @@ func InitDatabase() {
 		&models.Transaksi{},       
 		&models.DetailTransaksi{},
 		&models.StokHistory{},
+		&models.MarkdownPricing{},
 	)
 	if err != nil {
 		log.Fatalf("AutoMigrate gagal: %v", err)

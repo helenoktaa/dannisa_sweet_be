@@ -34,6 +34,7 @@ func main() {
 		&models.User{},
 		&models.Kategori{},
 		&models.Produk{},
+		&models.MarkdownPricing{},
 		&models.Transaksi{},
 		&models.DetailTransaksi{},
 		&models.StokHistory{},

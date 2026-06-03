@@ -9,55 +9,38 @@ import (
 
 type ProductService struct {
 	productRepo *repositories.ProductRepository
+	markdownService *MarkdownPricingService
 }
 
 func NewProductService() *ProductService {
 	return &ProductService{
 		productRepo: repositories.NewProductRepository(),
+		markdownService: NewMarkdownPricingService(),
 	}
 }
 
-func (s *ProductService) GetAll(
-	statusProduk string,
-) ([]models.ProdukResponse, error) {
-
-	products, err := s.productRepo.FindAll(
-		statusProduk,
-	)
-
+func (s *ProductService) GetAll(statusProduk string) ([]models.ProdukResponse, error) {
+	products, err := s.productRepo.FindAll(statusProduk)
 	if err != nil {
 		return nil, err
 	}
 
 	var responses []models.ProdukResponse
-
 	for _, p := range products {
-
-		responses = append(
-			responses,
-
-			models.ProdukResponse{
-				IDProduk:     p.IDProduk,
-				NamaProduk:   p.NamaProduk,
-				HargaModal:   p.HargaModal,
-				HargaJual:    p.HargaJual,
-				Stok:         p.Stok,
-				StatusProduk: p.StatusProduk,
-				ExpiredDate:  p.ExpiredDate,
-				ImageURL:     p.ImageURL,
-
-				Kategori: models.KategoriResponse{
-					IDKategori:   p.Kategori.IDKategori,
-					NamaKategori: p.Kategori.NamaKategori,
-				},
-			},
-		)
+		responses = append(responses, s.buildProdukResponse(p)) // ← pakai helper
 	}
 
 	return responses, nil
 }
-func (s *ProductService) GetByID(id string) (*models.Produk, error) {
-	return s.productRepo.FindByID(id)
+
+// GetByID sekarang return ProdukResponse bukan *models.Produk
+func (s *ProductService) GetByID(id string) (*models.ProdukResponse, error) {
+	p, err := s.productRepo.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+	resp := s.buildProdukResponse(*p)
+	return &resp, nil
 }
 
 func (s *ProductService) Create(req *models.CreateProdukRequest) (*models.Produk, error) {
@@ -145,4 +128,31 @@ func (s *ProductService) Update(id string, req *models.UpdateProdukRequest) (*mo
 
 func (s *ProductService) Delete(id string) error {
 	return s.productRepo.Delete(id)
+}
+
+func (s *ProductService) buildProdukResponse(p models.Produk) models.ProdukResponse {
+	resp := models.ProdukResponse{
+		IDProduk:     p.IDProduk,
+		NamaProduk:   p.NamaProduk,
+		HargaModal:   p.HargaModal,
+		HargaJual:    p.HargaJual,
+		Stok:         p.Stok,
+		StatusProduk: p.StatusProduk,
+		ExpiredDate:  p.ExpiredDate,
+		ImageURL:     p.ImageURL,
+		Kategori: models.KategoriResponse{
+			IDKategori:   p.Kategori.IDKategori,
+			NamaKategori: p.Kategori.NamaKategori,
+		},
+	}
+
+	// Hitung diskon jika ada
+	harga := s.markdownService.HitungHargaEfektif(p)
+	if harga.SumberDiskon != "tidak_ada" {
+		resp.HargaDiskon  = &harga.HargaDiskon
+		resp.PorsenDiskon = &harga.PorsenDiskon
+		resp.SumberDiskon = &harga.SumberDiskon
+	}
+
+	return resp
 }

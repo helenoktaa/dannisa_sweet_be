@@ -32,6 +32,7 @@ func SetupRouter() *gin.Engine {
 	userHandler := handlers.NewUserHandler()
 	stokHistoryHandler := handlers.NewStokHistoryHandler()
 	dashboardHandler := handlers.NewDashboardHandler()
+	markdownHandler := handlers.NewMarkdownPricingHandler()
 
 	// ─── API v1 group ─────────────────────────────────────────
 	v1 := r.Group("/v1")
@@ -73,6 +74,16 @@ func SetupRouter() *gin.Engine {
 					adminProduk.PUT("/:id", produkHandler.Update)    // PUT    /v1/produk/:id
 					adminProduk.DELETE("/:id", produkHandler.Delete) // DELETE /v1/produk/:id
 				}
+			}
+
+			// ── Markdown Pricing (Admin only) ─────────────────────────
+			markdown := protected.Group("/markdown")
+			markdown.Use(middleware.AdminOnly())
+			{
+				markdown.POST("", markdownHandler.SetMarkdown)                               // POST   /v1/markdown
+				markdown.GET("/:id_produk", markdownHandler.GetMarkdown)                     // GET    /v1/markdown/:id_produk
+				markdown.PATCH("/:id_produk/override", markdownHandler.OverrideManual)       // PATCH  /v1/markdown/:id_produk/override
+				markdown.DELETE("/:id_produk/override", markdownHandler.HapusOverrideManual) // DELETE /v1/markdown/:id_produk/override
 			}
 
 			// ── Kategori (GET: Admin & Kasir | CUD: Admin only) ─

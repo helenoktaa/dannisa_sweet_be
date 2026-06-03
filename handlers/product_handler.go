@@ -55,9 +55,11 @@ func (h *ProductHandler) GetAll(c *gin.Context) {
 }
 
 // GetByID - GET /products/:id
+// GetByID - GET /products/:id
 func (h *ProductHandler) GetByID(c *gin.Context) {
 	id := c.Param("id")
 
+	// Sekarang return *ProdukResponse, bukan *Produk
 	product, err := h.productService.GetByID(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{

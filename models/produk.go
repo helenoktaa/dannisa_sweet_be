@@ -17,6 +17,7 @@ type Produk struct {
 	// Relasi
 	Kategori        Kategori          `gorm:"foreignKey:IDKategori;references:IDKategori" json:"kategori,omitempty"`
 	DetailTransaksi []DetailTransaksi `gorm:"foreignKey:IDProduk"                         json:"detail_transaksi,omitempty"`
+	MarkdownPricing *MarkdownPricing  `gorm:"foreignKey:IDProduk"                         json:"markdown_pricing,omitempty"`
 }
 
 // DTO
@@ -54,6 +55,9 @@ type ProdukResponse struct {
 	HargaModal   float64          `json:"harga_modal"`
 	HargaJual    float64          `json:"harga_jual"`
 	Stok         int              `json:"stok"`
+	HargaDiskon  *float64         `json:"harga_diskon"`  
+	PorsenDiskon *float64         `json:"persen_diskon"` 
+	SumberDiskon *string          `json:"sumber_diskon"`
 	StatusProduk string           `json:"status_produk"`
 	ExpiredDate  *time.Time       `json:"expired_date"`
 	ImageURL     *string          `json:"image_url"`
