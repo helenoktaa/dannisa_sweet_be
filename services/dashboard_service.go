@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/helenoktaa/dannisa_sweet_be/config"
@@ -98,10 +99,15 @@ func (s *DashboardService) GetDashboard() (*models.DashboardResponse, error) {
 }
 
 func (s *DashboardService) GetDashboardHarian() (*models.DashboardHarian, error) {
-	now := time.Now()
-	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	wib, _ := time.LoadLocation("Asia/Jakarta")
+	now := time.Now().In(wib)
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, wib)
 	todayEnd := todayStart.Add(24 * time.Hour)
 	threeDaysAgo := todayStart.AddDate(0, 0, -3)
+
+	fmt.Printf("now WIB: %v\n", now)
+	fmt.Printf("todayStart: %v\n", todayStart)
+	fmt.Printf("todayEnd: %v\n", todayEnd)
 
 	result := &models.DashboardHarian{
 		TransaksiTerbaru: []models.TransaksiTerbaru{},
@@ -124,8 +130,8 @@ func (s *DashboardService) GetDashboardHarian() (*models.DashboardHarian, error)
 
 	// 3. Omzet & total transaksi
 	type OmzetResult struct {
-		TotalOmzet     float64
-		TotalTransaksi int64
+		TotalOmzet     float64 `gorm:"column:total_omzet"`
+		TotalTransaksi int64   `gorm:"column:total_transaksi"`
 	}
 	var omzet OmzetResult
 	if err := config.DB.Model(&models.Transaksi{}).
@@ -135,10 +141,12 @@ func (s *DashboardService) GetDashboardHarian() (*models.DashboardHarian, error)
 		Scan(&omzet).Error; err != nil {
 		return nil, err
 	}
+	result.TotalOmzet = omzet.TotalOmzet
+	result.TotalTransaksi = omzet.TotalTransaksi
 
 	// 4. Total modal
 	type ModalResult struct {
-		TotalModal float64
+		TotalModal float64 `gorm:"column:total_modal"`
 	}
 	var modal ModalResult
 	if err := config.DB.Table("detail_transaksi dt").
@@ -150,7 +158,8 @@ func (s *DashboardService) GetDashboardHarian() (*models.DashboardHarian, error)
 		Scan(&modal).Error; err != nil {
 		return nil, err
 	}
-
+	result.TotalModal = modal.TotalModal
+	result.KeuntunganBersih = result.TotalOmzet - result.TotalModal
 	// 5. Transaksi terbaru
 	type TrxRaw struct {
 		IDTransaksi      string
