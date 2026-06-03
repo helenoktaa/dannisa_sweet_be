@@ -159,6 +159,7 @@ func SetupRouter() *gin.Engine {
 
 			// ── Dashboard (Admin & Kasir) ─────────────────────
 			protected.GET("/dashboard", dashboardHandler.GetDashboard)
+			protected.GET("/dashboard/harian", dashboardHandler.GetDashboardHarian)
 		}
 	}
 

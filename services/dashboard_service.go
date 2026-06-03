@@ -2,6 +2,7 @@ package services
 
 import (
 	"time"
+
 	"github.com/helenoktaa/dannisa_sweet_be/config"
 	"github.com/helenoktaa/dannisa_sweet_be/models"
 )
@@ -16,8 +17,8 @@ func NewDashboardService() *DashboardService {
 func (s *DashboardService) GetDashboard() (*models.DashboardResponse, error) {
 	response := &models.DashboardResponse{
 		TransaksiPending:       []models.TransaksiPending{},
-        ProdukMendekatiExpired: []models.ProdukExpired{},
-        ProdukStokMenipis:      []models.ProdukStok{},
+		ProdukMendekatiExpired: []models.ProdukExpired{},
+		ProdukStokMenipis:      []models.ProdukStok{},
 	}
 	now := time.Now()
 
@@ -94,4 +95,98 @@ func (s *DashboardService) GetDashboard() (*models.DashboardResponse, error) {
 	}
 
 	return response, nil
+}
+
+func (s *DashboardService) GetDashboardHarian() (*models.DashboardHarian, error) {
+	now := time.Now()
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	todayEnd := todayStart.Add(24 * time.Hour)
+	threeDaysAgo := todayStart.AddDate(0, 0, -3)
+
+	result := &models.DashboardHarian{
+		TransaksiTerbaru: []models.TransaksiTerbaru{},
+	}
+
+	// 1. Total pending > 3 hari
+	if err := config.DB.Model(&models.Transaksi{}).
+		Where("status_pembayaran = ? AND tanggal_transaksi < ?", "Pending", threeDaysAgo).
+		Count(&result.TotalPendingLewat3Hari).Error; err != nil {
+		return nil, err
+	}
+
+	// 2. Total lunas hari ini
+	if err := config.DB.Model(&models.Transaksi{}).
+		Where("status_pembayaran = ? AND tanggal_transaksi >= ? AND tanggal_transaksi < ?",
+			"Lunas", todayStart, todayEnd).
+		Count(&result.TotalLunasHariIni).Error; err != nil {
+		return nil, err
+	}
+
+	// 3. Omzet & total transaksi
+	type OmzetResult struct {
+		TotalOmzet     float64
+		TotalTransaksi int64
+	}
+	var omzet OmzetResult
+	if err := config.DB.Model(&models.Transaksi{}).
+		Select("COALESCE(SUM(jumlah_bayar), 0) as total_omzet, COUNT(*) as total_transaksi").
+		Where("status_pembayaran = ? AND tanggal_transaksi >= ? AND tanggal_transaksi < ?",
+			"Lunas", todayStart, todayEnd).
+		Scan(&omzet).Error; err != nil {
+		return nil, err
+	}
+
+	// 4. Total modal
+	type ModalResult struct {
+		TotalModal float64
+	}
+	var modal ModalResult
+	if err := config.DB.Table("detail_transaksi dt").
+		Select("COALESCE(SUM(dt.qty * p.harga_modal), 0) as total_modal").
+		Joins("JOIN transaksi t ON t.id_transaksi = dt.id_transaksi").
+		Joins("JOIN produk p ON p.id_produk = dt.id_produk").
+		Where("t.status_pembayaran = ? AND t.tanggal_transaksi >= ? AND t.tanggal_transaksi < ?",
+			"Lunas", todayStart, todayEnd).
+		Scan(&modal).Error; err != nil {
+		return nil, err
+	}
+
+	// 5. Transaksi terbaru
+	type TrxRaw struct {
+		IDTransaksi      string
+		NamaCustomer     string
+		TanggalTransaksi time.Time
+		TotalItem        int
+		JumlahBayar      float64
+		MetodePembayaran string
+		StatusPembayaran string
+	}
+	var rows []TrxRaw
+
+	if err := config.DB.Table("transaksi t").
+		Select(`t.id_transaksi, t.nama_customer, t.tanggal_transaksi,
+            COALESCE(SUM(dt.qty), 0) as total_item,
+            t.jumlah_bayar, t.metode_pembayaran, t.status_pembayaran`).
+		Joins("LEFT JOIN detail_transaksi dt ON dt.id_transaksi = t.id_transaksi").
+		Where("t.tanggal_transaksi >= ?", threeDaysAgo).
+		Group("t.id_transaksi, t.nama_customer, t.tanggal_transaksi, t.jumlah_bayar, t.metode_pembayaran, t.status_pembayaran").
+		Order("t.tanggal_transaksi DESC").
+		Limit(20).
+		Scan(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	for _, r := range rows {
+		result.TransaksiTerbaru = append(result.TransaksiTerbaru, models.TransaksiTerbaru{
+			IDTransaksi:      r.IDTransaksi,
+			NamaCustomer:     r.NamaCustomer,
+			TanggalTransaksi: r.TanggalTransaksi.Format("02/01/2006 15:04"),
+			TotalItem:        r.TotalItem,
+			JumlahBayar:      r.JumlahBayar,
+			MetodePembayaran: r.MetodePembayaran,
+			StatusPembayaran: r.StatusPembayaran,
+		})
+	}
+
+	return result, nil
 }

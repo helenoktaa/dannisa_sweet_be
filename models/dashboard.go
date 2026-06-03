@@ -43,3 +43,24 @@ type ProdukStok struct {
 	Stok         int    `json:"stok"`
 	StatusProduk string `json:"status_produk"` // ready_stock / pre_order
 }
+
+// DashboardHarian - data harian
+type DashboardHarian struct {
+    TotalPendingLewat3Hari int64              `json:"total_pending_lewat_3_hari"`
+    TotalLunasHariIni      int64              `json:"total_lunas_hari_ini"`
+    KeuntunganBersih       float64            `json:"keuntungan_bersih"`
+    TotalOmzet             float64            `json:"total_omzet"`
+    TotalModal             float64            `json:"total_modal"`
+    TotalTransaksi         int64              `json:"total_transaksi"`
+    TransaksiTerbaru       []TransaksiTerbaru `json:"transaksi_terbaru"`
+}
+
+type TransaksiTerbaru struct {
+    IDTransaksi      string  `json:"id_transaksi"`
+    NamaCustomer     string  `json:"nama_customer"`
+    TanggalTransaksi string  `json:"tanggal_transaksi"`
+    TotalItem        int     `json:"total_item"`
+    JumlahBayar      float64 `json:"jumlah_bayar"`
+    MetodePembayaran string  `json:"metode_pembayaran"`
+    StatusPembayaran string  `json:"status_pembayaran"`
+}

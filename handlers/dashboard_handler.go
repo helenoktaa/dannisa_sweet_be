@@ -32,3 +32,17 @@ func (h *DashboardHandler) GetDashboard(c *gin.Context) {
 		"data":    data,
 	})
 }
+func (h *DashboardHandler) GetDashboardHarian(c *gin.Context) {
+    data, err := h.service.GetDashboardHarian()
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{
+            "success": false,
+            "message": "Gagal mengambil data dashboard harian",
+        })
+        return
+    }
+    c.JSON(http.StatusOK, gin.H{
+        "success": true,
+        "data":    data,
+    })
+}
