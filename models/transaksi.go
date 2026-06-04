@@ -20,6 +20,7 @@ type Transaksi struct {
 	TanggalTransaksi time.Time `gorm:"not null"                                  json:"tanggal_transaksi"`
 	NamaCustomer     string    `gorm:"not null;size:100"                         json:"nama_customer"`
 	JumlahBayar      float64   `gorm:"not null"                                  json:"jumlah_bayar"`
+	JumlahDp         float64   `gorm:"default:0"                                 json:"jumlah_dp"`
 	MetodePembayaran string    `gorm:"not null;size:30"                          json:"metode_pembayaran"` // Tunai / Transfer / QRIS
 	StatusPembayaran string    `gorm:"not null;size:20;default:'Pending'"        json:"status_pembayaran"` // Pending / Lunas
 	IDUser           string    `gorm:"not null;size:20;index"                    json:"id_user"`
@@ -48,8 +49,9 @@ type CreateTransaksiRequest struct {
 
 // DTO - Update Status Pembayaran
 type UpdateStatusPembayaranRequest struct {
-	StatusPembayaran string  `json:"status_pembayaran" binding:"required,oneof=Pending Lunas"`
-	JumlahBayar      float64 `json:"jumlah_bayar"      binding:"omitempty,min=0"`
+    StatusPembayaran string  `json:"status_pembayaran" binding:"required,oneof=Pending DP Lunas"` // ← tambah DP
+    JumlahBayar      float64 `json:"jumlah_bayar"      binding:"omitempty,min=0"`
+    JumlahDp         float64 `json:"jumlah_dp"         binding:"omitempty,min=0"`                // ← tambah
 }
 
 // DTO - Update Status Order (khusus pre order)
@@ -66,6 +68,7 @@ type TransaksiResponse struct {
 	TanggalTransaksi time.Time                 `json:"tanggal_transaksi"`
 	NamaCustomer     string                    `json:"nama_customer"`
 	JumlahBayar      float64                   `json:"jumlah_bayar"`
+	JumlahDp         float64                   `json:"jumlah_dp"`
 	MetodePembayaran string                    `json:"metode_pembayaran"`
 	StatusPembayaran string                    `json:"status_pembayaran"`
 	JenisOrder       string                    `json:"jenis_order"`

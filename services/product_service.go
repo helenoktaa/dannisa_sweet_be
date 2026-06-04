@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/helenoktaa/dannisa_sweet_be/models"
@@ -8,14 +9,16 @@ import (
 )
 
 type ProductService struct {
-	productRepo *repositories.ProductRepository
+	productRepo     *repositories.ProductRepository
 	markdownService *MarkdownPricingService
+	historyService  *StokHistoryService
 }
 
 func NewProductService() *ProductService {
 	return &ProductService{
-		productRepo: repositories.NewProductRepository(),
+		productRepo:     repositories.NewProductRepository(),
 		markdownService: NewMarkdownPricingService(),
+		historyService:  NewStokHistoryService(),
 	}
 }
 
@@ -27,13 +30,12 @@ func (s *ProductService) GetAll(statusProduk string) ([]models.ProdukResponse, e
 
 	var responses []models.ProdukResponse
 	for _, p := range products {
-		responses = append(responses, s.buildProdukResponse(p)) // ← pakai helper
+		responses = append(responses, s.buildProdukResponse(p))
 	}
 
 	return responses, nil
 }
 
-// GetByID sekarang return ProdukResponse bukan *models.Produk
 func (s *ProductService) GetByID(id string) (*models.ProdukResponse, error) {
 	p, err := s.productRepo.FindByID(id)
 	if err != nil {
@@ -43,14 +45,12 @@ func (s *ProductService) GetByID(id string) (*models.ProdukResponse, error) {
 	return &resp, nil
 }
 
-func (s *ProductService) Create(req *models.CreateProdukRequest) (*models.Produk, error) {
-	// Set default status
+func (s *ProductService) Create(req *models.CreateProdukRequest, idUser string) (*models.Produk, error) {
 	status := req.StatusProduk
 	if status == "" {
 		status = "ready"
 	}
 
-	// Parse expired date (opsional)
 	var expiredDate *time.Time
 	if req.ExpiredDate != "" {
 		parsed, err := time.Parse("2006-01-02", req.ExpiredDate)
@@ -80,6 +80,19 @@ func (s *ProductService) Create(req *models.CreateProdukRequest) (*models.Produk
 		return nil, err
 	}
 
+	// Catat stok awal ke history jika stok > 0
+	if req.Stok > 0 {
+		err2 := s.historyService.CatatSaja(
+			product.IDProduk,
+			idUser,
+			req.Stok,
+			"Stok awal produk baru",
+		)
+		if err2 != nil {
+			fmt.Println("=== ERROR CATAT HISTORY:", err2, "===")
+		}
+	}
+
 	return product, nil
 }
 
@@ -104,7 +117,6 @@ func (s *ProductService) Update(id string, req *models.UpdateProdukRequest) (*mo
 	if req.IDKategori != "" {
 		product.IDKategori = req.IDKategori
 	}
-
 	if req.StatusProduk != "" {
 		product.StatusProduk = req.StatusProduk
 	}
@@ -114,7 +126,6 @@ func (s *ProductService) Update(id string, req *models.UpdateProdukRequest) (*mo
 			product.ExpiredDate = &parsed
 		}
 	}
-
 	if req.ImageURL != "" {
 		product.ImageURL = &req.ImageURL
 	}
@@ -146,10 +157,9 @@ func (s *ProductService) buildProdukResponse(p models.Produk) models.ProdukRespo
 		},
 	}
 
-	// Hitung diskon jika ada
 	harga := s.markdownService.HitungHargaEfektif(p)
 	if harga.SumberDiskon != "tidak_ada" {
-		resp.HargaDiskon  = &harga.HargaDiskon
+		resp.HargaDiskon = &harga.HargaDiskon
 		resp.PorsenDiskon = &harga.PorsenDiskon
 		resp.SumberDiskon = &harga.SumberDiskon
 	}

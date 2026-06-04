@@ -44,12 +44,12 @@ func (s *TransaksiService) Create(req models.CreateTransaksiRequest) (*models.Tr
 			jenisOrder = models.JenisPreOrder
 			statusOrder = models.StatusMenungguDiproses
 		} else {
-    // Hanya cek stok untuk produk ready stock
-    if produk.StatusProduk != "preorder" && produk.Stok < item.Qty {
-        return nil, fmt.Errorf("stok produk %s tidak cukup (stok: %d, diminta: %d)",
-            produk.NamaProduk, produk.Stok, item.Qty)
-    }
-}
+			// Hanya cek stok untuk produk ready stock
+			if produk.StatusProduk != "preorder" && produk.Stok < item.Qty {
+				return nil, fmt.Errorf("stok produk %s tidak cukup (stok: %d, diminta: %d)",
+					produk.NamaProduk, produk.Stok, item.Qty)
+			}
+		}
 	}
 
 	var details []models.DetailTransaksi
@@ -199,11 +199,32 @@ func (s *TransaksiService) UpdateStatus(id string, req models.UpdateStatusPembay
 		return nil, errors.New("transaksi sudah lunas")
 	}
 
-	if err := s.transaksiRepo.UpdateStatusPembayaran(id, req.StatusPembayaran, req.JumlahBayar); err != nil {
+	// Validasi DP: tidak boleh melebihi total & tidak boleh kurang dari 50%
+	if req.StatusPembayaran == "DP" {
+		total := s.hitungTotal(transaksi)
+		dp50 := total * 0.5
+		if req.JumlahDp < dp50 {
+			return nil, fmt.Errorf("DP minimal 50%% dari total (Rp %.0f)", dp50)
+		}
+		if req.JumlahDp > total {
+			return nil, errors.New("DP tidak boleh melebihi total pembayaran")
+		}
+	}
+
+	if err := s.transaksiRepo.UpdateStatusPembayaran(id, req.StatusPembayaran, req.JumlahBayar, req.JumlahDp); err != nil {
 		return nil, errors.New("gagal mengupdate status pembayaran")
 	}
 
 	return s.GetByID(id)
+}
+
+// helper hitung total dari detail
+func (s *TransaksiService) hitungTotal(t *models.Transaksi) float64 {
+	var total float64
+	for _, d := range t.Detail {
+		total += d.HargaJual * float64(d.Qty)
+	}
+	return total
 }
 
 // ─────────────────────────────────────────────
@@ -295,6 +316,7 @@ func (s *TransaksiService) buildResponse(t *models.Transaksi) *models.TransaksiR
 		TanggalTransaksi: t.TanggalTransaksi,
 		NamaCustomer:     t.NamaCustomer,
 		JumlahBayar:      t.JumlahBayar,
+		JumlahDp: t.JumlahDp,
 		MetodePembayaran: t.MetodePembayaran,
 		StatusPembayaran: t.StatusPembayaran,
 		JenisOrder:       t.JenisOrder,

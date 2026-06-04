@@ -95,16 +95,16 @@ func (r *TransaksiRepository) Create(transaksi *models.Transaksi) error {
 }
 
 // UpdateStatus update status pembayaran dan jumlah bayar transaksi
-func (r *TransaksiRepository) UpdateStatusPembayaran(id string, status string, jumlahBayar float64) error {
-	updates := map[string]interface{}{
-		"status_pembayaran": status,
-	}
-	if jumlahBayar > 0 {
-		updates["jumlah_bayar"] = jumlahBayar
-	}
-	return config.DB.Model(&models.Transaksi{}).
-		Where("id_transaksi = ?", id).
-		Updates(updates).Error
+// Ubah signature — tambah jumlahDp
+func (r *TransaksiRepository) UpdateStatusPembayaran(id, status string, jumlahBayar float64, jumlahDp float64) error {
+    updates := map[string]interface{}{
+        "status_pembayaran": status,
+        "jumlah_bayar":      jumlahBayar,
+        "jumlah_dp":         jumlahDp,
+    }
+    return config.DB.Model(&models.Transaksi{}).
+        Where("id_transaksi = ?", id).
+        Updates(updates).Error
 }
 
 // GetLastNumber ambil nomor urut terakhir dari id_transaksi

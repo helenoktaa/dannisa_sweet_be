@@ -53,10 +53,10 @@ func (s *StokHistoryService) Create(
 	idHistory := fmt.Sprintf("STK%04d", lastNumber+1)
 
 	// Hitung nilai rugi — hanya jika pengurangan
-nilaiRugi := 0.0
-if req.Jenis == "pengurangan" {
-    nilaiRugi = float64(req.Jumlah) * produk.HargaModal
-}
+	nilaiRugi := 0.0
+	if req.Jenis == "pengurangan" {
+		nilaiRugi = float64(req.Jumlah) * produk.HargaModal
+	}
 
 	history := &models.StokHistory{
 		IDHistory:   idHistory,
@@ -82,10 +82,10 @@ if req.Jenis == "pengurangan" {
 	}
 
 	namaUser := ""
-user, err := s.userRepo.FindByID(idUser)
-if err == nil {
-	namaUser = user.NamaUser
-}
+	user, err := s.userRepo.FindByID(idUser)
+	if err == nil {
+		namaUser = user.NamaUser
+	}
 
 	return &models.StokHistoryResponse{
 		IDHistory:   history.IDHistory,
@@ -104,8 +104,38 @@ if err == nil {
 }
 
 
+func (s *StokHistoryService) CatatSaja(
+	idProduk string,
+	idUser string,
+	jumlah int,
+	keterangan string,
+) error {
+	produk, err := s.produkRepo.FindByID(idProduk)
+	if err != nil {
+		return errors.New("produk tidak ditemukan")
+	}
+
+	lastNumber, _ := s.historyRepo.GetLastNumber()
+	idHistory := fmt.Sprintf("STK%04d", lastNumber+1)
+
+	history := &models.StokHistory{
+		IDHistory:   idHistory,
+		IDProduk:    idProduk,
+		IDUser:      idUser,
+		Jenis:       "penambahan",
+		Jumlah:      jumlah,
+		StokSebelum: produk.Stok - jumlah, 
+		StokSesudah: produk.Stok,
+		Keterangan:  keterangan,
+		NilaiRugi:   0,
+		Tanggal:     time.Now(),
+	}
+
+	return s.historyRepo.Create(history)
+}
+
 // GetAll — ambil semua history
-func (s *StokHistoryService) GetAll(idProduk, jenis, tanggalMulai, tanggalAkhir string,) ([]models.StokHistoryResponse, error) {
+func (s *StokHistoryService) GetAll(idProduk, jenis, tanggalMulai, tanggalAkhir string) ([]models.StokHistoryResponse, error) {
 	histories, err := s.historyRepo.FindAll(idProduk, jenis, tanggalMulai, tanggalAkhir)
 	if err != nil {
 		return nil, err
@@ -131,4 +161,3 @@ func (s *StokHistoryService) GetAll(idProduk, jenis, tanggalMulai, tanggalAkhir 
 
 	return responses, nil
 }
-

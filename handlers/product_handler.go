@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"net/http"
-
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/helenoktaa/dannisa_sweet_be/models"
 	"github.com/helenoktaa/dannisa_sweet_be/services"
@@ -76,31 +76,43 @@ func (h *ProductHandler) GetByID(c *gin.Context) {
 }
 
 // Create - POST /products
+// Create - POST /products
 func (h *ProductHandler) Create(c *gin.Context) {
-	var req models.CreateProdukRequest
+    var req models.CreateProdukRequest
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"message": err.Error(),
-		})
-		return
-	}
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{
+            "success": false,
+            "message": err.Error(),
+        })
+        return
+    }
 
-	product, err := h.productService.Create(&req)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": "Gagal membuat produk",
-		})
-		return
-	}
+    // Ambil id_user dari JWT context
+    idUserRaw, exists := c.Get("id_user")
+    if !exists {
+        c.JSON(http.StatusUnauthorized, gin.H{
+            "success": false,
+            "message": "User tidak terautentikasi",
+        })
+        return
+    }
+    idUser := fmt.Sprintf("%v", idUserRaw)
 
-	c.JSON(http.StatusCreated, gin.H{
-		"success": true,
-		"message": "Produk berhasil dibuat",
-		"data":    product,
-	})
+    product, err := h.productService.Create(&req, idUser) // ← tambah idUser
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{
+            "success": false,
+            "message": err.Error(),
+        })
+        return
+    }
+
+    c.JSON(http.StatusCreated, gin.H{
+        "success": true,
+        "message": "Produk berhasil dibuat",
+        "data":    product,
+    })
 }
 
 // Update - PUT /products/:id
