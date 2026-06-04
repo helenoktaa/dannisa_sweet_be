@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/helenoktaa/dannisa_sweet_be/handlers"
 	"github.com/helenoktaa/dannisa_sweet_be/middleware"
+	"github.com/helenoktaa/dannisa_sweet_be/models"
 )
 
 func SetupRouter() *gin.Engine {
@@ -24,15 +25,15 @@ func SetupRouter() *gin.Engine {
 	})
 
 	// ─── Init handlers ────────────────────────────────────────
-	authHandler := handlers.NewAuthHandler()
-	produkHandler := handlers.NewProductHandler()
-	kategoriHandler := handlers.NewKategoriHandler()
-	jabatanHandler := handlers.NewJabatanHandler()
-	transaksiHandler := handlers.NewTransaksiHandler()
-	userHandler := handlers.NewUserHandler()
+	authHandler        := handlers.NewAuthHandler()
+	produkHandler      := handlers.NewProductHandler()
+	kategoriHandler    := handlers.NewKategoriHandler()
+	jabatanHandler     := handlers.NewJabatanHandler()
+	transaksiHandler   := handlers.NewTransaksiHandler()
+	userHandler        := handlers.NewUserHandler()
 	stokHistoryHandler := handlers.NewStokHistoryHandler()
-	dashboardHandler := handlers.NewDashboardHandler()
-	markdownHandler := handlers.NewMarkdownPricingHandler()
+	dashboardHandler   := handlers.NewDashboardHandler()
+	markdownHandler    := handlers.NewMarkdownPricingHandler()
 
 	// ─── API v1 group ─────────────────────────────────────────
 	v1 := r.Group("/v1")
@@ -45,81 +46,82 @@ func SetupRouter() *gin.Engine {
 			})
 		})
 
-		// ── Auth routes (public, tidak butuh JWT) ─────────────
+		// ── Auth routes (public) ──────────────────────────────
 		auth := v1.Group("/auth")
 		{
-			auth.POST("/login", authHandler.Login)       // POST /v1/auth/login
-			auth.POST("/register", authHandler.Register) // POST /v1/auth/register
+			auth.POST("/login", authHandler.Login)
+			auth.POST("/register", authHandler.Register)
 		}
 
-		// ── Protected routes (semua butuh JWT) ────────────────
+		// ── Protected routes ──────────────────────────────────
 		protected := v1.Group("")
 		protected.Use(middleware.AuthMiddleware())
 		{
-			// ── Profile (semua role bisa akses) ───────────────
-			protected.GET("/auth/profile", authHandler.GetProfile)      // GET /v1/auth/profile
-			protected.PUT("/auth/profile", authHandler.UpdateProfile)   // PUT /v1/auth/profile
-			protected.PUT("/auth/password", authHandler.UpdatePassword) // PUT /v1/auth/password
+			// ── Profile ───────────────────────────────────────
+			protected.GET("/auth/profile", authHandler.GetProfile)
+			protected.PUT("/auth/profile", authHandler.UpdateProfile)
+			protected.PUT("/auth/password", authHandler.UpdatePassword)
 
-			// ── Produk (GET: Admin & Kasir | CUD: Admin only) ─
+			// ── Produk ────────────────────────────────────────
 			produk := protected.Group("/produk")
+			produk.Use(middleware.MenuAccess(models.MenuProduk))
 			{
-				produk.GET("", produkHandler.GetAll)      // GET /v1/produk
-				produk.GET("/:id", produkHandler.GetByID) // GET /v1/produk/:id
+				produk.GET("", produkHandler.GetAll)
+				produk.GET("/:id", produkHandler.GetByID)
 
 				adminProduk := produk.Group("")
 				adminProduk.Use(middleware.AdminOnly())
 				{
-					adminProduk.POST("", produkHandler.Create)       // POST   /v1/produk
-					adminProduk.PUT("/:id", produkHandler.Update)    // PUT    /v1/produk/:id
-					adminProduk.DELETE("/:id", produkHandler.Delete) // DELETE /v1/produk/:id
+					adminProduk.POST("", produkHandler.Create)
+					adminProduk.PUT("/:id", produkHandler.Update)
+					adminProduk.DELETE("/:id", produkHandler.Delete)
 				}
 			}
 
-			// ── Markdown Pricing (Admin only) ─────────────────────────
+			// ── Markdown Pricing (Admin only) ─────────────────
 			markdown := protected.Group("/markdown")
 			markdown.Use(middleware.AdminOnly())
 			{
-				markdown.POST("", markdownHandler.SetMarkdown)                               // POST   /v1/markdown
-				markdown.GET("/:id_produk", markdownHandler.GetMarkdown)                     // GET    /v1/markdown/:id_produk
-				markdown.PATCH("/:id_produk/override", markdownHandler.OverrideManual)       // PATCH  /v1/markdown/:id_produk/override
-				markdown.DELETE("/:id_produk/override", markdownHandler.HapusOverrideManual) // DELETE /v1/markdown/:id_produk/override
+				markdown.POST("", markdownHandler.SetMarkdown)
+				markdown.GET("/:id_produk", markdownHandler.GetMarkdown)
+				markdown.PATCH("/:id_produk/override", markdownHandler.OverrideManual)
+				markdown.DELETE("/:id_produk/override", markdownHandler.HapusOverrideManual)
 			}
 
-			// ── Kategori (GET: Admin & Kasir | CUD: Admin only) ─
+			// ── Kategori ──────────────────────────────────────
 			kategori := protected.Group("/kategori")
 			{
-				kategori.GET("", kategoriHandler.GetAll)      // GET /v1/kategori
-				kategori.GET("/:id", kategoriHandler.GetByID) // GET /v1/kategori/:id
+				kategori.GET("", kategoriHandler.GetAll)
+				kategori.GET("/:id", kategoriHandler.GetByID)
 
 				adminKategori := kategori.Group("")
 				adminKategori.Use(middleware.AdminOnly())
 				{
-					adminKategori.POST("", kategoriHandler.Create)       // POST   /v1/kategori
-					adminKategori.PUT("/:id", kategoriHandler.Update)    // PUT    /v1/kategori/:id
-					adminKategori.DELETE("/:id", kategoriHandler.Delete) // DELETE /v1/kategori/:id
+					adminKategori.POST("", kategoriHandler.Create)
+					adminKategori.PUT("/:id", kategoriHandler.Update)
+					adminKategori.DELETE("/:id", kategoriHandler.Delete)
 				}
 			}
 
-			// ── Jabatan (GET: Admin & Kasir | CUD: Admin only) ─
+			// ── Jabatan ───────────────────────────────────────
 			jabatan := protected.Group("/jabatan")
 			{
-				jabatan.GET("", jabatanHandler.GetAll)      // GET /v1/jabatan
-				jabatan.GET("/:id", jabatanHandler.GetByID) // GET /v1/jabatan/:id
+				jabatan.GET("", jabatanHandler.GetAll)
+				jabatan.GET("/:id", jabatanHandler.GetByID)
 
 				adminJabatan := jabatan.Group("")
 				adminJabatan.Use(middleware.AdminOnly())
 				{
-					adminJabatan.POST("", jabatanHandler.Create)       // POST   /v1/jabatan
-					adminJabatan.PUT("/:id", jabatanHandler.Update)    // PUT    /v1/jabatan/:id
-					adminJabatan.DELETE("/:id", jabatanHandler.Delete) // DELETE /v1/jabatan/:id
+					adminJabatan.POST("", jabatanHandler.Create)
+					adminJabatan.PUT("/:id", jabatanHandler.Update)
+					adminJabatan.DELETE("/:id", jabatanHandler.Delete)
 				}
 			}
 
-			// ── Transaksi ─────────────────────────────────────────────
+			// ── Transaksi ─────────────────────────────────────
 			transaksi := protected.Group("/transaksi")
+			transaksi.Use(middleware.MenuAccess(models.MenuTransaksi))
 			{
-				// Admin & Kasir boleh akses
 				transaksi.POST("", transaksiHandler.Create)
 				transaksi.GET("", transaksiHandler.GetAll)
 				transaksi.GET("/pre-order/aktif", transaksiHandler.GetPreOrderAktif)
@@ -127,39 +129,55 @@ func SetupRouter() *gin.Engine {
 				transaksi.GET("/:id", transaksiHandler.GetByID)
 				transaksi.GET("/:id/invoice", transaksiHandler.GetInvoice)
 
-				// Admin only
 				adminTrx := transaksi.Group("")
 				adminTrx.Use(middleware.AdminOnly())
-
 				{
 					adminTrx.GET("/laporan", transaksiHandler.GetLaporan)
 					adminTrx.PUT("/:id/status", transaksiHandler.UpdateStatus)
-
 				}
-
 			}
 
 			// ── User Management (Admin only) ──────────────────
 			users := protected.Group("/users")
 			users.Use(middleware.AdminOnly())
 			{
-				users.GET("", userHandler.GetAll)        // GET    /v1/users
-				users.GET("/:id", userHandler.GetByID)   // GET    /v1/users/:id
-				users.PUT("/:id", userHandler.Update)    // PUT    /v1/users/:id
-				users.DELETE("/:id", userHandler.Delete) // DELETE /v1/users/:id
+				users.GET("", userHandler.GetAll)
+				users.POST("", userHandler.Create)
+				users.GET("/:id", userHandler.GetByID)
+				users.PUT("/:id", userHandler.Update)
+				users.DELETE("/:id", userHandler.Delete)
+				users.PUT("/:id/password", userHandler.UpdatePassword)
+
+				// Menu permissions
+				users.GET("/:id/menus", userHandler.GetUserMenus)
+				users.PUT("/:id/menus", userHandler.UpdateUserMenus)
 			}
 
-			// ── Stok History (Admin only) ──────────────────────────────
+			// ── Available Menus (Admin only) ──────────────────
+			protected.GET("/menus", middleware.AdminOnly(), userHandler.GetAvailableMenus)
+
+			// ── Stok History (Admin only) ──────────────────────
 			stokHistory := protected.Group("/stok-history")
 			stokHistory.Use(middleware.AdminOnly())
 			{
-				stokHistory.POST("", stokHistoryHandler.Create) // catat perubahan stok
-				stokHistory.GET("", stokHistoryHandler.GetAll)  // lihat history
+				stokHistory.POST("", stokHistoryHandler.Create)
+				stokHistory.GET("", stokHistoryHandler.GetAll)
 			}
 
-			// ── Dashboard (Admin & Kasir) ─────────────────────
-			protected.GET("/dashboard", dashboardHandler.GetDashboard)
-			protected.GET("/dashboard/harian", dashboardHandler.GetDashboardHarian)
+			// ── Dashboard ─────────────────────────────────────
+			dashboard := protected.Group("/dashboard")
+			dashboard.Use(middleware.MenuAccess(models.MenuDashboard))
+			{
+				dashboard.GET("", dashboardHandler.GetDashboard)
+				dashboard.GET("/harian", dashboardHandler.GetDashboardHarian)
+			}
+
+			// ── Laporan (via transaksi, Admin only) ───────────
+			protected.GET("/laporan",
+				middleware.AdminOnly(),
+				middleware.MenuAccess(models.MenuLaporan),
+				transaksiHandler.GetLaporan,
+			)
 		}
 	}
 

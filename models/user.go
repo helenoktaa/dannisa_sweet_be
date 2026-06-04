@@ -2,27 +2,30 @@ package models
 
 // User menyimpan data akun karyawan (Admin atau Kasir)
 type User struct {
-	IDUser        string `gorm:"primaryKey;size:20"        json:"id_user"`
-	NamaUser      string `gorm:"not null;size:100"         json:"nama_user"`
-	Email         string `gorm:"not null;unique;size:100"  json:"email"`
-	Password      string `gorm:"not null"                  json:"-"` // disembunyikan dari response JSON
-	RekPembayaran string `gorm:"size:50"                   json:"rek_pembayaran"`
-	Whatsapp      string `gorm:"size:20"                   json:"whatsapp"`
-	IDJabatan     string `gorm:"not null;size:20;index"         json:"id_jabatan"`
+	IDUser        string `gorm:"primaryKey;size:20"       json:"id_user"`
+	NamaUser      string `gorm:"not null;size:100"        json:"nama_user"`
+	Email         string `gorm:"not null;unique;size:100" json:"email"`
+	Password      string `gorm:"not null"                 json:"-"`
+	RekPembayaran string `gorm:"size:50"                  json:"rek_pembayaran"`
+	Whatsapp      string `gorm:"size:20"                  json:"whatsapp"`
+	IDJabatan     string `gorm:"not null;size:20;index"   json:"id_jabatan"`
 
 	// Relasi
-	Jabatan Jabatan `gorm:"foreignKey:IDJabatan;references:IDJabatan" json:"jabatan,omitempty"`
+	Jabatan   Jabatan    `gorm:"foreignKey:IDJabatan;references:IDJabatan" json:"jabatan,omitempty"`
+	UserMenus []UserMenu `gorm:"foreignKey:IDUser;references:IDUser"       json:"user_menus,omitempty"`
 }
 
-// DTO
+// ── DTO ────────────────────────────────────────────────────
+
 type RegisterRequest struct {
-	IDUser        string `json:"id_user"`
-	NamaUser      string `json:"nama_user"       binding:"required"`
-	Email         string `json:"email"           binding:"required,email"`
-	Password      string `json:"password"        binding:"required,min=6"`
-	RekPembayaran string `json:"rek_pembayaran"`
-	Whatsapp      string `json:"whatsapp"`
-	IDJabatan     string `json:"id_jabatan"      binding:"required"`
+	IDUser        string   `json:"id_user"`
+	NamaUser      string   `json:"nama_user"    binding:"required"`
+	Email         string   `json:"email"        binding:"required,email"`
+	Password      string   `json:"password"     binding:"required,min=6"`
+	RekPembayaran string   `json:"rek_pembayaran"`
+	Whatsapp      string   `json:"whatsapp"`
+	IDJabatan     string   `json:"id_jabatan"   binding:"required"`
+	MenuKeys      []string `json:"menu_keys"` // ← fix: tambah ini
 }
 
 type LoginRequest struct {
@@ -31,10 +34,11 @@ type LoginRequest struct {
 }
 
 type UpdateUserRequest struct {
-	NamaUser      string `json:"nama_user"`
-	RekPembayaran string `json:"rek_pembayaran"`
-	Whatsapp      string `json:"whatsapp"`
-	IDJabatan     string `json:"id_jabatan"`
+	NamaUser      string   `json:"nama_user"`
+	RekPembayaran string   `json:"rek_pembayaran"`
+	Whatsapp      string   `json:"whatsapp"`
+	IDJabatan     string   `json:"id_jabatan"`
+	MenuKeys      []string `json:"menu_keys"`
 }
 
 type UpdatePasswordRequest struct {
@@ -42,7 +46,8 @@ type UpdatePasswordRequest struct {
 	PasswordBaru string `json:"password_baru" binding:"required,min=6"`
 }
 
-// Response
+// ── Response ───────────────────────────────────────────────
+
 type UserResponse struct {
 	IDUser        string          `json:"id_user"`
 	NamaUser      string          `json:"nama_user"`
@@ -50,6 +55,7 @@ type UserResponse struct {
 	RekPembayaran string          `json:"rek_pembayaran"`
 	Whatsapp      string          `json:"whatsapp"`
 	Jabatan       JabatanResponse `json:"jabatan"`
+	MenuKeys      []string        `json:"menu_keys"`
 }
 
 type LoginResponse struct {

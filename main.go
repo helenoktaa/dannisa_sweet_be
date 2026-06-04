@@ -32,6 +32,7 @@ func main() {
 	err := config.DB.AutoMigrate(
 		&models.Jabatan{},
 		&models.User{},
+		&models.UserMenu{},
 		&models.Kategori{},
 		&models.Produk{},
 		&models.MarkdownPricing{},
