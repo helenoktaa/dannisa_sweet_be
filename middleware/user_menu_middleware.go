@@ -14,14 +14,9 @@ var userMenuService = services.NewUserMenuService(
 	repositories.NewUserMenuRepository(),
 )
 
-// ── MenuAccess ─────────────────────────────────────────────
-// Cek apakah user punya akses ke menu tertentu
-// Dipasang di route spesifik, contoh:
-// router.GET("/transaksi", middleware.AuthMiddleware(), middleware.MenuAccess(models.MenuTransaksi), handler)
 
 func MenuAccess(menuKey string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Ambil id_user dari context (sudah diset AuthMiddleware)
 		idUserRaw, exists := c.Get("id_user")
 		if !exists {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
@@ -39,6 +34,13 @@ func MenuAccess(menuKey string) gin.HandlerFunc {
 				"message":    "ID user tidak valid",
 				"error_code": "INVALID_USER_ID",
 			})
+			return
+		}
+
+		// ✅ Admin bypass — skip pengecekan menu_keys
+		role, _ := c.Get("role")
+		if role == "Admin" {
+			c.Next()
 			return
 		}
 
