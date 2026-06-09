@@ -199,15 +199,24 @@ func (s *TransaksiService) UpdateStatus(id string, req models.UpdateStatusPembay
 		return nil, errors.New("transaksi sudah lunas")
 	}
 
-	// Validasi DP: tidak boleh melebihi total & tidak boleh kurang dari 50%
+	total := s.hitungTotal(transaksi)
+
 	if req.StatusPembayaran == "DP" {
-		total := s.hitungTotal(transaksi)
 		dp50 := total * 0.5
 		if req.JumlahDp < dp50 {
 			return nil, fmt.Errorf("DP minimal 50%% dari total (Rp %.0f)", dp50)
 		}
 		if req.JumlahDp > total {
 			return nil, errors.New("DP tidak boleh melebihi total pembayaran")
+		}
+	}
+
+	// ── Validasi pelunasan ──────────────────────────────────────
+	if req.StatusPembayaran == "Lunas" {
+		sudahBayar := transaksi.JumlahBayar + transaksi.JumlahDp
+		sisa := total - sudahBayar
+		if req.JumlahBayar < sisa {
+			return nil, fmt.Errorf("jumlah bayar kurang, sisa yang harus dibayar: Rp %.0f", sisa)
 		}
 	}
 
@@ -316,12 +325,13 @@ func (s *TransaksiService) buildResponse(t *models.Transaksi) *models.TransaksiR
 		TanggalTransaksi: t.TanggalTransaksi,
 		NamaCustomer:     t.NamaCustomer,
 		JumlahBayar:      t.JumlahBayar,
-		JumlahDp: t.JumlahDp,
+		JumlahDp:         t.JumlahDp,
 		MetodePembayaran: t.MetodePembayaran,
 		StatusPembayaran: t.StatusPembayaran,
 		JenisOrder:       t.JenisOrder,
 		StatusOrder:      t.StatusOrder,
 		Catatan:          t.Catatan,
+		TanggalLunas:     t.TanggalLunas,
 		User: models.UserResponse{
 			IDUser:   t.User.IDUser,
 			NamaUser: t.User.NamaUser,

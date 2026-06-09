@@ -16,17 +16,19 @@ const (
 
 // Transaksi menyimpan data transaksi penjualan Dannisa Sweet
 type Transaksi struct {
-	IDTransaksi      string    `gorm:"primaryKey;size:30"                        json:"id_transaksi"`
-	TanggalTransaksi time.Time `gorm:"not null"                                  json:"tanggal_transaksi"`
-	NamaCustomer     string    `gorm:"not null;size:100"                         json:"nama_customer"`
-	JumlahBayar      float64   `gorm:"not null"                                  json:"jumlah_bayar"`
-	JumlahDp         float64   `gorm:"default:0"                                 json:"jumlah_dp"`
-	MetodePembayaran string    `gorm:"not null;size:30"                          json:"metode_pembayaran"` // Tunai / Transfer / QRIS
-	StatusPembayaran string    `gorm:"not null;size:20;default:'Pending'"        json:"status_pembayaran"` // Pending / Lunas
-	IDUser           string    `gorm:"not null;size:20;index"                    json:"id_user"`
-	JenisOrder       string    `gorm:"not null;size:20;default:'ready_stock'"   json:"jenis_order"`
-	StatusOrder      string    `gorm:"not null;size:30;default:'selesai'"        json:"status_order"`
-	Catatan          string    `gorm:"size:500"                                  json:"catatan"`
+	IDTransaksi      string     `gorm:"primaryKey;size:30"                        json:"id_transaksi"`
+	TanggalTransaksi time.Time  `gorm:"not null"                                  json:"tanggal_transaksi"`
+	NamaCustomer     string     `gorm:"not null;size:100"                         json:"nama_customer"`
+	JumlahBayar      float64    `gorm:"not null"                                  json:"jumlah_bayar"`
+	JumlahDp         float64    `gorm:"default:0"                                 json:"jumlah_dp"`
+	MetodePembayaran string     `gorm:"not null;size:30"                          json:"metode_pembayaran"` // Tunai / Transfer / QRIS
+	StatusPembayaran string     `gorm:"not null;size:20;default:'Pending'"        json:"status_pembayaran"` // Pending / Lunas
+	IDUser           string     `gorm:"not null;size:20;index"                    json:"id_user"`
+	JenisOrder       string     `gorm:"not null;size:20;default:'ready_stock'"   json:"jenis_order"`
+	StatusOrder      string     `gorm:"not null;size:30;default:'selesai'"        json:"status_order"`
+	Catatan          string     `gorm:"size:500"                                  json:"catatan"`
+	UpdatedAt        time.Time  `gorm:"autoUpdateTime"                            json:"updated_at"`
+	TanggalLunas     *time.Time `gorm:"default:null"     json:"tanggal_lunas"`
 
 	// Relasi
 	User   User              `gorm:"foreignKey:IDUser;references:IDUser"    json:"user,omitempty"`
@@ -49,9 +51,9 @@ type CreateTransaksiRequest struct {
 
 // DTO - Update Status Pembayaran
 type UpdateStatusPembayaranRequest struct {
-    StatusPembayaran string  `json:"status_pembayaran" binding:"required,oneof=Pending DP Lunas"` // ← tambah DP
-    JumlahBayar      float64 `json:"jumlah_bayar"      binding:"omitempty,min=0"`
-    JumlahDp         float64 `json:"jumlah_dp"         binding:"omitempty,min=0"`                // ← tambah
+	StatusPembayaran string  `json:"status_pembayaran" binding:"required,oneof=Pending DP Lunas"` // ← tambah DP
+	JumlahBayar      float64 `json:"jumlah_bayar"      binding:"omitempty,min=0"`
+	JumlahDp         float64 `json:"jumlah_dp"         binding:"omitempty,min=0"` // ← tambah
 }
 
 // DTO - Update Status Order (khusus pre order)
@@ -74,10 +76,10 @@ type TransaksiResponse struct {
 	JenisOrder       string                    `json:"jenis_order"`
 	StatusOrder      string                    `json:"status_order"`
 	Catatan          string                    `json:"catatan"`
+	TanggalLunas     *time.Time                `json:"tanggal_lunas"`
 	User             UserResponse              `json:"user"`
 	Detail           []DetailTransaksiResponse `json:"detail"`
 
-	
 	TotalItem      int     `json:"total_item"`
 	TotalPenjualan float64 `json:"total_penjualan"` // SUM(qty * harga_jual)
 }
