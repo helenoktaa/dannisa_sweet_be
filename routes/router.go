@@ -129,10 +129,16 @@ func SetupRouter() *gin.Engine {
 				transaksi.GET("/:id", transaksiHandler.GetByID)
 				transaksi.GET("/:id/invoice", transaksiHandler.GetInvoice)
 
+				// ── Laporan: Admin + kasir yg punya akses menu laporan
+				transaksi.GET("/laporan",
+					middleware.MenuAccess(models.MenuLaporan),
+					transaksiHandler.GetLaporan,
+				)
+
 				adminTrx := transaksi.Group("")
 				adminTrx.Use(middleware.AdminOnly())
 				{
-					adminTrx.GET("/laporan", transaksiHandler.GetLaporan)
+					// Hapus GET /laporan dari sini
 					adminTrx.PUT("/:id/status", transaksiHandler.UpdateStatus)
 				}
 			}
@@ -156,12 +162,21 @@ func SetupRouter() *gin.Engine {
 			// ── Available Menus (Admin only) ──────────────────
 			protected.GET("/menus", middleware.AdminOnly(), userHandler.GetAvailableMenus)
 
-			// ── Stok History (Admin only) ──────────────────────
+			// ── Stok History ───────────────────────────────────
+			// GET: kasir yg punya akses menu laporan bisa lihat
+			// POST: Admin only
 			stokHistory := protected.Group("/stok-history")
-			stokHistory.Use(middleware.AdminOnly())
 			{
-				stokHistory.POST("", stokHistoryHandler.Create)
-				stokHistory.GET("", stokHistoryHandler.GetAll)
+				stokHistory.GET("",
+					middleware.MenuAccess(models.MenuLaporan),
+					stokHistoryHandler.GetAll,
+				)
+
+				adminStok := stokHistory.Group("")
+				adminStok.Use(middleware.AdminOnly())
+				{
+					adminStok.POST("", stokHistoryHandler.Create)
+				}
 			}
 
 			// ── Dashboard ─────────────────────────────────────
@@ -172,12 +187,7 @@ func SetupRouter() *gin.Engine {
 				dashboard.GET("/harian", dashboardHandler.GetDashboardHarian)
 			}
 
-			// ── Laporan (via transaksi, Admin only) ───────────
-			protected.GET("/laporan",
-				middleware.AdminOnly(),
-				middleware.MenuAccess(models.MenuLaporan),
-				transaksiHandler.GetLaporan,
-			)
+			
 		}
 	}
 

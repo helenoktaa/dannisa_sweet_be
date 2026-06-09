@@ -1,8 +1,8 @@
 package services
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -13,15 +13,17 @@ import (
 )
 
 type AuthService struct {
-	userRepo *repositories.UserRepository
+	userRepo        *repositories.UserRepository
+	userMenuService *UserMenuService
 }
 
 func NewAuthService() *AuthService {
+	userMenuRepo := repositories.NewUserMenuRepository()
 	return &AuthService{
-		userRepo: repositories.NewUserRepository(),
+		userRepo:        repositories.NewUserRepository(),
+		userMenuService: NewUserMenuService(userMenuRepo),
 	}
 }
-
 
 // REGISTER
 
@@ -33,12 +35,12 @@ func (s *AuthService) Register(req models.RegisterRequest) (*models.UserResponse
 		return nil, errors.New("email sudah digunakan")
 	}
 
-	 // ── Generate id_user otomatis ──────────────────────────
-    lastNumber, err := s.userRepo.GetLastNumber()
-    if err != nil {
-        return nil, errors.New("gagal generate ID user")
-    }
-    generatedID := fmt.Sprintf("UDS%02d", lastNumber+1)
+	// ── Generate id_user otomatis ──────────────────────────
+	lastNumber, err := s.userRepo.GetLastNumber()
+	if err != nil {
+		return nil, errors.New("gagal generate ID user")
+	}
+	generatedID := fmt.Sprintf("UDS%02d", lastNumber+1)
 
 	// hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword(
@@ -52,7 +54,7 @@ func (s *AuthService) Register(req models.RegisterRequest) (*models.UserResponse
 
 	// buat object user
 	user := models.User{
-		 IDUser:       generatedID,
+		IDUser:        generatedID,
 		NamaUser:      req.NamaUser,
 		Email:         req.Email,
 		Password:      string(hashedPassword),
@@ -89,7 +91,6 @@ func (s *AuthService) Register(req models.RegisterRequest) (*models.UserResponse
 	return response, nil
 }
 
-
 // LOGIN
 
 func (s *AuthService) Login(email string, password string) (*models.LoginResponse, error) {
@@ -116,6 +117,8 @@ func (s *AuthService) Login(email string, password string) (*models.LoginRespons
 		return nil, errors.New("gagal membuat token")
 	}
 
+	menuKeys, _ := s.userMenuService.GetByUserID(user.IDUser)
+
 	// response
 	response := &models.LoginResponse{
 		Token: token,
@@ -125,6 +128,7 @@ func (s *AuthService) Login(email string, password string) (*models.LoginRespons
 			Email:         user.Email,
 			RekPembayaran: user.RekPembayaran,
 			Whatsapp:      user.Whatsapp,
+			MenuKeys:      menuKeys,
 			Jabatan: models.JabatanResponse{
 				IDJabatan:   user.Jabatan.IDJabatan,
 				NamaJabatan: user.Jabatan.NamaJabatan,
@@ -136,7 +140,6 @@ func (s *AuthService) Login(email string, password string) (*models.LoginRespons
 	return response, nil
 }
 
-
 // GET PROFILE
 
 func (s *AuthService) GetProfile(idUser string) (*models.UserResponse, error) {
@@ -146,12 +149,15 @@ func (s *AuthService) GetProfile(idUser string) (*models.UserResponse, error) {
 		return nil, errors.New("user tidak ditemukan")
 	}
 
+	menuKeys, _ := s.userMenuService.GetByUserID(idUser)
+
 	response := &models.UserResponse{
 		IDUser:        user.IDUser,
 		NamaUser:      user.NamaUser,
 		Email:         user.Email,
 		RekPembayaran: user.RekPembayaran,
 		Whatsapp:      user.Whatsapp,
+		MenuKeys:      menuKeys,
 		Jabatan: models.JabatanResponse{
 			IDJabatan:   user.Jabatan.IDJabatan,
 			NamaJabatan: user.Jabatan.NamaJabatan,
@@ -161,7 +167,6 @@ func (s *AuthService) GetProfile(idUser string) (*models.UserResponse, error) {
 
 	return response, nil
 }
-
 
 // UPDATE PROFILE
 
@@ -205,7 +210,6 @@ func (s *AuthService) UpdateProfile(
 	return response, nil
 }
 
-
 // UPDATE PASSWORD
 
 func (s *AuthService) UpdatePassword(
@@ -246,7 +250,6 @@ func (s *AuthService) UpdatePassword(
 
 	return nil
 }
-
 
 // GENERATE JWT
 

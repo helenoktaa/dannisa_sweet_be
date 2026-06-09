@@ -54,8 +54,9 @@ type UserResponse struct {
 	Email         string          `json:"email"`
 	RekPembayaran string          `json:"rek_pembayaran"`
 	Whatsapp      string          `json:"whatsapp"`
-	Jabatan       JabatanResponse `json:"jabatan"`
 	MenuKeys      []string        `json:"menu_keys"`
+	Jabatan       JabatanResponse `json:"jabatan"`
+	
 }
 
 type LoginResponse struct {
