@@ -53,8 +53,11 @@ func (s *TransaksiService) Create(req models.CreateTransaksiRequest) (*models.Tr
 	}
 
 	var details []models.DetailTransaksi
+	var totalHarga float64
+
 	for _, item := range req.Detail {
 		produk, _ := s.produkRepo.FindByID(item.IDProduk)
+		totalHarga += produk.HargaJual * float64(item.Qty)
 		details = append(details, models.DetailTransaksi{
 			IDTransaksi: req.IDTransaksi,
 			IDProduk:    item.IDProduk,
@@ -63,20 +66,31 @@ func (s *TransaksiService) Create(req models.CreateTransaksiRequest) (*models.Tr
 		})
 	}
 
+	statusPembayaran := "Pending"
+	var tanggalLunas *time.Time // ← pointer, nil kalau belum lunas
+
+	if jenisOrder == models.JenisReadyStock &&
+		req.MetodePembayaran == "Tunai" &&
+		req.JumlahBayar >= totalHarga {
+		statusPembayaran = "Lunas"
+		now := time.Now()
+		tanggalLunas = &now // ← set tanggal lunas sekarang
+	}
+
 	transaksi := &models.Transaksi{
 		IDTransaksi:      req.IDTransaksi,
 		TanggalTransaksi: time.Now(),
 		NamaCustomer:     req.NamaCustomer,
 		JumlahBayar:      req.JumlahBayar,
 		MetodePembayaran: req.MetodePembayaran,
-		StatusPembayaran: "Pending",
+		StatusPembayaran: statusPembayaran,
 		IDUser:           req.IDUser,
 		JenisOrder:       jenisOrder,
 		StatusOrder:      statusOrder,
 		Catatan:          req.Catatan,
 		Detail:           details,
+		TanggalLunas:     tanggalLunas, 
 	}
-
 	if err := s.transaksiRepo.Create(transaksi); err != nil {
 		return nil, errors.New("gagal menyimpan transaksi")
 	}

@@ -28,7 +28,7 @@ func (s *DashboardService) GetDashboard() (*models.DashboardResponse, error) {
 	// diurutkan dari yang paling lama (prioritas diproses duluan)
 	var transaksis []models.Transaksi
 	if err := config.DB.
-		Where("status_pembayaran = ?", "Pending").
+		Where("status_pembayaran IN ?", []string{"Pending", "DP"}).
 		Order("tanggal_transaksi ASC").
 		Find(&transaksis).Error; err != nil {
 		return nil, err
@@ -115,7 +115,7 @@ func (s *DashboardService) GetDashboardHarian() (*models.DashboardHarian, error)
 
 	// 1. Total pending > 3 hari
 	if err := config.DB.Model(&models.Transaksi{}).
-		Where("status_pembayaran = ? AND tanggal_transaksi < ?", "Pending", threeDaysAgo).
+		Where("status_pembayaran IN ? AND tanggal_transaksi < ?", []string{"Pending", "DP"}, threeDaysAgo).
 		Count(&result.TotalPendingLewat3Hari).Error; err != nil {
 		return nil, err
 	}
