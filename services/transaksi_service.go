@@ -147,6 +147,8 @@ func (s *TransaksiService) GetInvoice(id string) (*models.InvoiceResponse, error
 		NamaKasir:        transaksi.User.NamaUser,
 		MetodePembayaran: transaksi.MetodePembayaran,
 		StatusPembayaran: transaksi.StatusPembayaran,
+		TanggalLunas:     transaksi.TanggalLunas,
+		JumlahDp:         transaksi.JumlahDp,
 		Detail:           resp.Detail,
 		TotalItem:        resp.TotalItem,
 		TotalPenjualan:   resp.TotalPenjualan,

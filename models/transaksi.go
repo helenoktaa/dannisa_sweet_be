@@ -114,6 +114,8 @@ type InvoiceResponse struct {
 	NamaKasir        string                    `json:"nama_kasir"`
 	MetodePembayaran string                    `json:"metode_pembayaran"`
 	StatusPembayaran string                    `json:"status_pembayaran"`
+	TanggalLunas     *time.Time                `json:"tanggal_lunas"` 
+	JumlahDp         float64                   `json:"jumlah_dp"`
 	Detail           []DetailTransaksiResponse `json:"detail"`
 	TotalItem        int                       `json:"total_item"`
 	TotalPenjualan   float64                   `json:"total_penjualan"`
