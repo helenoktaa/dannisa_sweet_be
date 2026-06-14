@@ -89,7 +89,7 @@ func (s *TransaksiService) Create(req models.CreateTransaksiRequest) (*models.Tr
 		StatusOrder:      statusOrder,
 		Catatan:          req.Catatan,
 		Detail:           details,
-		TanggalLunas:     tanggalLunas, 
+		TanggalLunas:     tanggalLunas,
 	}
 	if err := s.transaksiRepo.Create(transaksi); err != nil {
 		return nil, errors.New("gagal menyimpan transaksi")
@@ -140,6 +140,12 @@ func (s *TransaksiService) GetInvoice(id string) (*models.InvoiceResponse, error
 
 	resp := s.buildResponse(transaksi)
 
+	totalDibayar := transaksi.JumlahBayar + transaksi.JumlahDp
+	kembalian := totalDibayar - resp.TotalPenjualan
+	if kembalian < 0 {
+		kembalian = 0
+	}
+
 	return &models.InvoiceResponse{
 		IDTransaksi:      transaksi.IDTransaksi,
 		TanggalTransaksi: transaksi.TanggalTransaksi,
@@ -148,6 +154,7 @@ func (s *TransaksiService) GetInvoice(id string) (*models.InvoiceResponse, error
 		MetodePembayaran: transaksi.MetodePembayaran,
 		StatusPembayaran: transaksi.StatusPembayaran,
 		TanggalLunas:     transaksi.TanggalLunas,
+		JenisOrder:       transaksi.JenisOrder,
 		JumlahDp:         transaksi.JumlahDp,
 		Detail:           resp.Detail,
 		TotalItem:        resp.TotalItem,
@@ -227,29 +234,24 @@ func (s *TransaksiService) UpdateStatus(id string, req models.UpdateStatusPembay
 		}
 	}
 
-	// ── Validasi pelunasan ──────────────────────────────────────
+	jumlahBayarFinal := req.JumlahBayar
+	jumlahDpFinal := req.JumlahDp
+
 	if req.StatusPembayaran == "Lunas" {
 		sudahBayar := transaksi.JumlahBayar + transaksi.JumlahDp
 		sisa := total - sudahBayar
 		if req.JumlahBayar < sisa {
 			return nil, fmt.Errorf("jumlah bayar kurang, sisa yang harus dibayar: Rp %.0f", sisa)
 		}
+		jumlahBayarFinal = req.JumlahBayar
+		jumlahDpFinal = req.JumlahDp // ← repository sudah handle, tidak perlu ambil dari DB
 	}
 
-	if err := s.transaksiRepo.UpdateStatusPembayaran(id, req.StatusPembayaran, req.JumlahBayar, req.JumlahDp); err != nil {
+	if err := s.transaksiRepo.UpdateStatusPembayaran(id, req.StatusPembayaran, jumlahBayarFinal, jumlahDpFinal); err != nil {
 		return nil, errors.New("gagal mengupdate status pembayaran")
 	}
 
 	return s.GetByID(id)
-}
-
-// helper hitung total dari detail
-func (s *TransaksiService) hitungTotal(t *models.Transaksi) float64 {
-	var total float64
-	for _, d := range t.Detail {
-		total += d.HargaJual * float64(d.Qty)
-	}
-	return total
 }
 
 // ─────────────────────────────────────────────
@@ -362,4 +364,15 @@ func (s *TransaksiService) buildResponse(t *models.Transaksi) *models.TransaksiR
 		TotalItem:      totalItem,
 		TotalPenjualan: totalPenjualan,
 	}
+}
+
+// ─────────────────────────────────────────────
+// hitungTotal (internal helper)
+// ─────────────────────────────────────────────
+func (s *TransaksiService) hitungTotal(t *models.Transaksi) float64 {
+	var total float64
+	for _, d := range t.Detail {
+		total += d.HargaJual * float64(d.Qty)
+	}
+	return total
 }

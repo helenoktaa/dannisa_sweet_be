@@ -91,7 +91,6 @@ type TransaksiListResponse struct {
 }
 
 // DTO & Response Laporan
-// Laporan TIDAK punya tabel sendiri — dihitung dari JOIN query
 type LaporanRequest struct {
 	TanggalMulai string `form:"tanggal_mulai" binding:"required"` // format: 2024-01-01
 	TanggalAkhir string `form:"tanggal_akhir" binding:"required"` // format: 2024-12-31
@@ -115,6 +114,7 @@ type InvoiceResponse struct {
 	MetodePembayaran string                    `json:"metode_pembayaran"`
 	StatusPembayaran string                    `json:"status_pembayaran"`
 	TanggalLunas     *time.Time                `json:"tanggal_lunas"` 
+	JenisOrder        string                    `json:"jenis_order"`
 	JumlahDp         float64                   `json:"jumlah_dp"`
 	Detail           []DetailTransaksiResponse `json:"detail"`
 	TotalItem        int                       `json:"total_item"`

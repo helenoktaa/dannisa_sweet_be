@@ -98,18 +98,24 @@ func (r *TransaksiRepository) Create(transaksi *models.Transaksi) error {
 // UpdateStatus update status pembayaran dan jumlah bayar transaksi
 // Ubah signature — tambah jumlahDp
 func (r *TransaksiRepository) UpdateStatusPembayaran(id, status string, jumlahBayar float64, jumlahDp float64) error {
-	updates := map[string]interface{}{
-		"status_pembayaran": status,
-		"jumlah_bayar":      gorm.Expr("jumlah_bayar + ?", jumlahBayar),
-		"jumlah_dp":         jumlahDp,
-	}
-	if status == "Lunas" {
-		now := time.Now()
-		updates["tanggal_lunas"] = now
-	}
-	return config.DB.Model(&models.Transaksi{}).
-		Where("id_transaksi = ?", id).
-		Updates(updates).Error
+    updates := map[string]interface{}{
+        "status_pembayaran": status,
+        "jumlah_bayar":      gorm.Expr("jumlah_bayar + ?", jumlahBayar),
+    }
+
+   
+    if status == "DP" {
+        updates["jumlah_dp"] = jumlahDp
+    }
+
+    if status == "Lunas" {
+        now := time.Now()
+        updates["tanggal_lunas"] = now
+    }
+
+    return config.DB.Model(&models.Transaksi{}).
+        Where("id_transaksi = ?", id).
+        Updates(updates).Error
 }
 
 // GetLastNumber ambil nomor urut terakhir dari id_transaksi

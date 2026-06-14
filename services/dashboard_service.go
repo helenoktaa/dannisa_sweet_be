@@ -128,15 +128,17 @@ func (s *DashboardService) GetDashboardHarian() (*models.DashboardHarian, error)
 		return nil, err
 	}
 
-	// 3. Omzet & total transaksi
+	// 3. Omzet & total transaksi — hitung dari detail, bukan jumlah_bayar
 	type OmzetResult struct {
 		TotalOmzet     float64 `gorm:"column:total_omzet"`
 		TotalTransaksi int64   `gorm:"column:total_transaksi"`
 	}
 	var omzet OmzetResult
-	if err := config.DB.Model(&models.Transaksi{}).
-		Select("COALESCE(SUM(jumlah_bayar), 0) as total_omzet, COUNT(*) as total_transaksi").
-		Where("status_pembayaran = ? AND tanggal_transaksi >= ? AND tanggal_transaksi < ?",
+	if err := config.DB.Table("detail_transaksi dt").
+		Select(`COALESCE(SUM(dt.qty * dt.harga_jual), 0) as total_omzet,
+            COUNT(DISTINCT t.id_transaksi) as total_transaksi`).
+		Joins("JOIN transaksi t ON t.id_transaksi = dt.id_transaksi").
+		Where("t.status_pembayaran = ? AND t.tanggal_transaksi >= ? AND t.tanggal_transaksi < ?",
 			"Lunas", todayStart, todayEnd).
 		Scan(&omzet).Error; err != nil {
 		return nil, err
@@ -160,13 +162,13 @@ func (s *DashboardService) GetDashboardHarian() (*models.DashboardHarian, error)
 	}
 	result.TotalModal = modal.TotalModal
 	result.KeuntunganBersih = result.TotalOmzet - result.TotalModal
-	// 5. Transaksi terbaru
+	// 5. Transaksi terbaru — tambah total_penjualan dari detail
 	type TrxRaw struct {
 		IDTransaksi      string
 		NamaCustomer     string
 		TanggalTransaksi time.Time
 		TotalItem        int
-		JumlahBayar      float64
+		TotalPenjualan   float64 // ← ganti dari JumlahBayar
 		MetodePembayaran string
 		StatusPembayaran string
 	}
@@ -174,11 +176,12 @@ func (s *DashboardService) GetDashboardHarian() (*models.DashboardHarian, error)
 
 	if err := config.DB.Table("transaksi t").
 		Select(`t.id_transaksi, t.nama_customer, t.tanggal_transaksi,
-            COALESCE(SUM(dt.qty), 0) as total_item,
-            t.jumlah_bayar, t.metode_pembayaran, t.status_pembayaran`).
+        COALESCE(SUM(dt.qty), 0) as total_item,
+        COALESCE(SUM(dt.qty * dt.harga_jual), 0) as total_penjualan,
+        t.metode_pembayaran, t.status_pembayaran`).
 		Joins("LEFT JOIN detail_transaksi dt ON dt.id_transaksi = t.id_transaksi").
 		Where("t.tanggal_transaksi >= ?", threeDaysAgo).
-		Group("t.id_transaksi, t.nama_customer, t.tanggal_transaksi, t.jumlah_bayar, t.metode_pembayaran, t.status_pembayaran").
+		Group("t.id_transaksi, t.nama_customer, t.tanggal_transaksi, t.metode_pembayaran, t.status_pembayaran").
 		Order("t.tanggal_transaksi DESC").
 		Limit(20).
 		Scan(&rows).Error; err != nil {
@@ -191,11 +194,10 @@ func (s *DashboardService) GetDashboardHarian() (*models.DashboardHarian, error)
 			NamaCustomer:     r.NamaCustomer,
 			TanggalTransaksi: r.TanggalTransaksi.Format("02/01/2006 15:04"),
 			TotalItem:        r.TotalItem,
-			JumlahBayar:      r.JumlahBayar,
+			JumlahBayar:      r.TotalPenjualan, // ← pakai TotalPenjualan
 			MetodePembayaran: r.MetodePembayaran,
 			StatusPembayaran: r.StatusPembayaran,
 		})
 	}
-
 	return result, nil
 }
