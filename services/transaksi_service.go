@@ -244,7 +244,7 @@ func (s *TransaksiService) UpdateStatus(id string, req models.UpdateStatusPembay
 			return nil, fmt.Errorf("jumlah bayar kurang, sisa yang harus dibayar: Rp %.0f", sisa)
 		}
 		jumlahBayarFinal = req.JumlahBayar
-		jumlahDpFinal = req.JumlahDp // ← repository sudah handle, tidak perlu ambil dari DB
+		jumlahDpFinal = transaksi.JumlahDp
 	}
 
 	if err := s.transaksiRepo.UpdateStatusPembayaran(id, req.StatusPembayaran, jumlahBayarFinal, jumlahDpFinal); err != nil {

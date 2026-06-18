@@ -28,7 +28,7 @@ func (s *DashboardService) GetDashboard() (*models.DashboardResponse, error) {
 	// diurutkan dari yang paling lama (prioritas diproses duluan)
 	var transaksis []models.Transaksi
 	if err := config.DB.
-		Where("status_pembayaran IN ?", []string{"Pending", "DP"}).
+		Where("status_pembayaran IN ? AND status_order != ?", []string{"Pending", "DP"}, "dibatalkan").
 		Order("tanggal_transaksi ASC").
 		Find(&transaksis).Error; err != nil {
 		return nil, err
@@ -115,14 +115,14 @@ func (s *DashboardService) GetDashboardHarian() (*models.DashboardHarian, error)
 
 	// 1. Total pending > 3 hari
 	if err := config.DB.Model(&models.Transaksi{}).
-		Where("status_pembayaran IN ? AND tanggal_transaksi < ?", []string{"Pending", "DP"}, threeDaysAgo).
+		Where("status_pembayaran IN ? AND tanggal_transaksi < ? AND status_order != ?", []string{"Pending", "DP"}, threeDaysAgo, "dibatalkan").
 		Count(&result.TotalPendingLewat3Hari).Error; err != nil {
 		return nil, err
 	}
 
 	// 2. Total lunas hari ini
 	if err := config.DB.Model(&models.Transaksi{}).
-		Where("status_pembayaran = ? AND tanggal_transaksi >= ? AND tanggal_transaksi < ?",
+		Where("status_pembayaran = ? AND tanggal_lunas >= ? AND tanggal_lunas < ?",
 			"Lunas", todayStart, todayEnd).
 		Count(&result.TotalLunasHariIni).Error; err != nil {
 		return nil, err
@@ -136,9 +136,9 @@ func (s *DashboardService) GetDashboardHarian() (*models.DashboardHarian, error)
 	var omzet OmzetResult
 	if err := config.DB.Table("detail_transaksi dt").
 		Select(`COALESCE(SUM(dt.qty * dt.harga_jual), 0) as total_omzet,
-            COUNT(DISTINCT t.id_transaksi) as total_transaksi`).
+        COUNT(DISTINCT t.id_transaksi) as total_transaksi`).
 		Joins("JOIN transaksi t ON t.id_transaksi = dt.id_transaksi").
-		Where("t.status_pembayaran = ? AND t.tanggal_transaksi >= ? AND t.tanggal_transaksi < ?",
+		Where("t.status_pembayaran = ? AND t.tanggal_lunas >= ? AND t.tanggal_lunas < ?",
 			"Lunas", todayStart, todayEnd).
 		Scan(&omzet).Error; err != nil {
 		return nil, err
@@ -155,7 +155,7 @@ func (s *DashboardService) GetDashboardHarian() (*models.DashboardHarian, error)
 		Select("COALESCE(SUM(dt.qty * p.harga_modal), 0) as total_modal").
 		Joins("JOIN transaksi t ON t.id_transaksi = dt.id_transaksi").
 		Joins("JOIN produk p ON p.id_produk = dt.id_produk").
-		Where("t.status_pembayaran = ? AND t.tanggal_transaksi >= ? AND t.tanggal_transaksi < ?",
+		Where("t.status_pembayaran = ? AND t.tanggal_lunas >= ? AND t.tanggal_lunas < ?",
 			"Lunas", todayStart, todayEnd).
 		Scan(&modal).Error; err != nil {
 		return nil, err
@@ -180,7 +180,7 @@ func (s *DashboardService) GetDashboardHarian() (*models.DashboardHarian, error)
         COALESCE(SUM(dt.qty * dt.harga_jual), 0) as total_penjualan,
         t.metode_pembayaran, t.status_pembayaran`).
 		Joins("LEFT JOIN detail_transaksi dt ON dt.id_transaksi = t.id_transaksi").
-		Where("t.tanggal_transaksi >= ?", threeDaysAgo).
+		Where("t.tanggal_transaksi >= ? AND t.status_order != ?", threeDaysAgo, "dibatalkan").
 		Group("t.id_transaksi, t.nama_customer, t.tanggal_transaksi, t.metode_pembayaran, t.status_pembayaran").
 		Order("t.tanggal_transaksi DESC").
 		Limit(20).
