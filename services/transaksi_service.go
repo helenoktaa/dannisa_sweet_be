@@ -330,6 +330,7 @@ func (s *TransaksiService) buildResponse(t *models.Transaksi) *models.TransaksiR
 				HargaModal: d.Produk.HargaModal,
 				HargaJual:  d.Produk.HargaJual,
 				Stok:       d.Produk.Stok,
+				StatusProduk: d.Produk.StatusProduk,
 				Kategori: models.KategoriResponse{
 					IDKategori:   d.Produk.Kategori.IDKategori,
 					NamaKategori: d.Produk.Kategori.NamaKategori,
